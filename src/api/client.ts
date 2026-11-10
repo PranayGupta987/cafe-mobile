@@ -7,7 +7,7 @@ export const SOCKET_URL = 'https://cafeapp-backend-sgj7.onrender.com';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 20000,
+  timeout: 45000,
   headers: {
     'Content-Type': 'application/json',
   },
