@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
-  TextInput,
   ScrollView,
   TouchableOpacity,
   Switch,
@@ -19,9 +18,10 @@ import { CafeCard } from '@/components/common/Card';
 import { QuantityStepper } from '@/components/specific/QuantityStepper';
 import { VegIndicator } from '@/components/specific/VegIndicator';
 import { FloatingCartBar } from '@/components/specific/FloatingCartBar';
+import { AnimatedSearchTicker } from '@/components/specific/AnimatedSearchTicker';
 import { Shimmer } from '@/components/common/Shimmer';
 import { Colors } from '@/constants/colors';
-import { Radius, Spacing, Elevation } from '@/constants/dimens';
+import { Radius, Spacing } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
 import { formatPaise } from '@/utils/currency';
 import { ApiResponse } from '@/types/auth';
@@ -94,33 +94,24 @@ export default function MenuScreen() {
     <View style={styles.container}>
       {/* Search & Filter Header */}
       <View style={styles.header}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color={Colors.textMuted} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search pour-overs, pastries, beans..."
-            placeholderTextColor={Colors.textMuted}
+        <View style={{ flex: 1 }}>
+          <AnimatedSearchTicker
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
-            </TouchableOpacity>
-          ) : null}
         </View>
 
         <View style={styles.vegToggleRow}>
-          <Text style={styles.vegToggleLabel}>Veg Only</Text>
+          <Text style={styles.vegToggleLabel}>Veg</Text>
           <Switch
             value={vegOnly}
             onValueChange={(val) => {
               Haptics.selectionAsync();
               setVegOnly(val);
             }}
-            trackColor={{ false: Colors.border, true: Colors.success }}
+            trackColor={{ false: Colors.border, true: Colors.uberGreen }}
             thumbColor="#FFFFFF"
-            style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
+            style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }}
           />
         </View>
       </View>
@@ -186,7 +177,7 @@ export default function MenuScreen() {
           <View style={{ gap: Spacing.md }}>
             {[1, 2, 3, 4].map((key) => (
               <View key={key} style={styles.shimmerCard}>
-                <Shimmer width={100} height={100} radius={Radius.md} />
+                <Shimmer width={104} height={104} radius={Radius.md} />
                 <View style={{ flex: 1, gap: 8, marginLeft: 12 }}>
                   <Shimmer width={140} height={18} />
                   <Shimmer width={80} height={14} />
@@ -230,14 +221,19 @@ export default function MenuScreen() {
                   {/* Details Body */}
                   <View style={styles.itemDetails}>
                     <View style={styles.metaRow}>
+                      <View style={styles.ratingBadge}>
+                        <Ionicons name="star" size={10} color={Colors.ratingGold} />
+                        <Text style={styles.ratingText}>4.8</Text>
+                      </View>
+                      <View style={styles.prepBadge}>
+                        <Ionicons name="flash-outline" size={10} color={Colors.uberGreen} />
+                        <Text style={styles.prepText}>15 mins</Text>
+                      </View>
                       {item.isSpicy ? (
                         <View style={styles.spicyTag}>
                           <Ionicons name="flame" size={11} color={Colors.error} />
                           <Text style={styles.spicyText}>Spicy</Text>
                         </View>
-                      ) : null}
-                      {item.category?.name ? (
-                        <Text style={styles.categoryTag}>{item.category.name}</Text>
                       ) : null}
                     </View>
 
@@ -296,40 +292,27 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.base,
     paddingTop: Spacing.sm,
-    paddingBottom: Spacing.xs,
+    paddingBottom: Spacing.sm,
     backgroundColor: Colors.surface,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    gap: 12,
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
-    paddingHorizontal: Spacing.md,
-    height: 42,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: Spacing.sm,
-    fontSize: 14,
-    color: Colors.textPrimary,
+    gap: 10,
   },
   vegToggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: Colors.uberGreenContainer,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
     gap: 4,
   },
   vegToggleLabel: {
     fontSize: 12,
-    fontWeight: '700',
-    color: Colors.textPrimary,
+    fontWeight: '800',
+    color: Colors.uberGreenDark,
   },
   categoryPillsContainer: {
     backgroundColor: Colors.surface,
@@ -343,15 +326,15 @@ const styles = StyleSheet.create({
   },
   categoryPill: {
     paddingHorizontal: 16,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: Radius.full,
     backgroundColor: Colors.background,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.border,
   },
   categoryPillActive: {
-    backgroundColor: Colors.cafeBrown,
-    borderColor: Colors.cafeBrown,
+    backgroundColor: Colors.uberGreen,
+    borderColor: Colors.uberGreen,
   },
   categoryPillText: {
     fontSize: 13,
@@ -360,7 +343,7 @@ const styles = StyleSheet.create({
   },
   categoryPillTextActive: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontWeight: '800',
   },
   listContent: {
     padding: Spacing.base,
@@ -420,6 +403,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.uberGreenContainer,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    gap: 2,
+  },
+  ratingText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.uberGreenDark,
+  },
+  prepBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surfaceVariant,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    gap: 2,
+  },
+  prepText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+  },
   spicyTag: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -434,14 +445,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.error,
   },
-  categoryTag: {
-    fontSize: 11,
-    color: Colors.cafeGoldDark,
-    fontWeight: '700',
-  },
   itemName: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
     marginTop: 2,
   },
@@ -460,7 +466,7 @@ const styles = StyleSheet.create({
   itemPrice: {
     fontSize: 16,
     fontWeight: '800',
-    color: Colors.cafeBrown,
+    color: Colors.textPrimary,
   },
   stepperContainer: {
     alignItems: 'flex-end',

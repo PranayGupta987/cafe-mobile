@@ -16,7 +16,7 @@ function HeaderCartButton() {
       accessibilityRole="button"
       accessibilityLabel={`Shopping cart, ${totalItems} items`}
     >
-      <Ionicons name="cart-outline" size={24} color={Colors.cafeBrown} />
+      <Ionicons name="cart-outline" size={24} color={Colors.textPrimary} />
       {totalItems > 0 ? (
         <View style={styles.headerBadge}>
           <Text style={styles.headerBadgeText}>{totalItems}</Text>
@@ -32,22 +32,30 @@ export default function TabsLayout() {
       screenOptions={{
         headerStyle: {
           backgroundColor: Colors.surface,
-          shadowColor: 'transparent',
-          elevation: 0,
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 2,
+          elevation: 1,
         },
-        headerTintColor: Colors.cafeBrown,
+        headerTintColor: Colors.textPrimary,
         headerTitleStyle: {
-          fontWeight: '700',
+          fontWeight: '800',
+          fontSize: 18,
         },
         headerRight: () => <HeaderCartButton />,
-        tabBarActiveTintColor: Colors.cafeBrown,
+        tabBarActiveTintColor: Colors.uberGreen,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarStyle: {
           backgroundColor: Colors.surface,
           borderTopColor: Colors.border,
-          height: 60,
+          height: 62,
           paddingBottom: 8,
-          paddingTop: 8,
+          paddingTop: 6,
+        },
+        tabBarLabelStyle: {
+          fontWeight: '700',
+          fontSize: 11,
         },
       }}
     >
@@ -113,7 +121,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
-    backgroundColor: Colors.error,
+    backgroundColor: Colors.uberGreen,
     borderRadius: 9,
     minWidth: 18,
     height: 18,
@@ -124,6 +132,6 @@ const styles = StyleSheet.create({
   headerBadgeText: {
     color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

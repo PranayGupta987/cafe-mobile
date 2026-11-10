@@ -1,12 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown,
+  FadeOutDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withSequence,
+  withSpring,
+} from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing, Elevation } from '@/constants/dimens';
-import { Typography } from '@/constants/typography';
 import { formatPaise } from '@/utils/currency';
 
 interface FloatingCartBarProps {
@@ -22,6 +28,21 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
   onPress,
   tableNumber,
 }) => {
+  const badgeScale = useSharedValue(1);
+
+  useEffect(() => {
+    if (totalItems > 0) {
+      badgeScale.value = withSequence(
+        withSpring(1.3, { damping: 4, stiffness: 220 }),
+        withSpring(1, { damping: 7 })
+      );
+    }
+  }, [totalItems]);
+
+  const animatedBadgeStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: badgeScale.value }],
+  }));
+
   if (totalItems <= 0) return null;
 
   const handlePress = () => {
@@ -41,15 +62,15 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
         style={styles.container}
       >
         <LinearGradient
-          colors={['#2E1C14', '#1A0F0A']}
+          colors={['#000000', '#1A1A1A']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.leftSection}>
-          <View style={styles.badge}>
+          <Animated.View style={[styles.badge, animatedBadgeStyle]}>
             <Text style={styles.badgeText}>{totalItems}</Text>
-          </View>
+          </Animated.View>
           <View style={styles.priceContainer}>
             <Text style={styles.priceText}>{formatPaise(totalPaise)}</Text>
             <Text style={styles.subtext}>
@@ -61,7 +82,7 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
         <View style={styles.rightSection}>
           <Text style={styles.viewCartText}>View Cart</Text>
           <View style={styles.arrowIconWrap}>
-            <Ionicons name="arrow-forward" size={15} color="#FFFFFF" />
+            <Ionicons name="arrow-forward" size={15} color="#000000" />
           </View>
         </View>
       </TouchableOpacity>
@@ -85,25 +106,34 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(221, 161, 94, 0.3)',
-    ...Elevation.lg,
+    borderWidth: 1.5,
+    borderColor: 'rgba(6, 193, 103, 0.4)',
+    shadowColor: Colors.uberGreen,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
   },
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   badge: {
-    backgroundColor: Colors.caramel,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    backgroundColor: Colors.uberGreen,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.md,
+    shadowColor: Colors.uberGreen,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
   },
   badgeText: {
-    color: '#1A0F0A',
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '800',
   },
@@ -133,7 +163,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: Colors.uberGreen,
     alignItems: 'center',
     justifyContent: 'center',
   },

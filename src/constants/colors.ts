@@ -1,41 +1,60 @@
 export const Colors = {
-  // Luxury Artisanal Café Palette
-  cafeBrown: '#5C3A21',
-  cafeBrownDark: '#3A2313',
-  cafeBrownLight: '#7D5337',
-  cafeBrownContainer: '#F2ECE4',
-  cafeCream: '#F9F6F0',
-  cafeCreamLight: '#FFFFFF',
-  cafeGold: '#C59B27',
-  cafeGoldDark: '#9A761A',
-  cafeGoldContainer: '#FFF9E6',
+  // Flagship Uber Eats Green Palette
+  uberGreen: '#06C167',
+  uberGreenDark: '#05944F',
+  uberGreenLight: '#10B981',
+  uberGreenContainer: '#E8F8F0',
+  uberGreenBorder: 'rgba(6, 193, 103, 0.25)',
 
-  espressoDark: '#1A0F0A',
-  roastMedium: '#2E1C14',
-  caramel: '#DDA15E',
-  matcha: '#2D5A27',
-  matchaLight: '#E9F5E8',
+  // High Contrast Neutrals & Surfaces
+  uberBlack: '#000000',
+  uberDark: '#121212',
+  uberDarkElevated: '#1F1F1F',
+  uberGray: '#F6F6F6',
+  uberGrayDark: '#E2E2E2',
 
-  success: '#2E7D32',
-  successContainer: '#E8F5E9',
+  // Canvas & Surfaces
+  background: '#F6F6F6',
+  surface: '#FFFFFF',
+  surfaceVariant: '#F0F0F0',
+
+  // Typography
+  textPrimary: '#000000',
+  textSecondary: '#545454',
+  textMuted: '#757575',
+  border: '#E8E8E8',
+  divider: '#EEEEEE',
+
+  // Status & Feedback
+  success: '#06C167',
+  successContainer: '#E8F8F0',
   warning: '#ED6C02',
   warningContainer: '#FFF3E0',
-  error: '#D32F2F',
+  error: '#E11900',
   errorContainer: '#FFEBEE',
-  info: '#0288D1',
-  infoContainer: '#E1F5FE',
+  info: '#276EF1',
+  infoContainer: '#EBF3FE',
+  ratingGold: '#FF9500',
 
-  background: '#F7F4EE',
-  surface: '#FFFFFF',
-  surfaceVariant: '#F2ECE4',
+  // Glassmorphic & Overlays
+  glassBackground: 'rgba(255, 255, 255, 0.92)',
+  glassBorder: 'rgba(255, 255, 255, 0.8)',
+  darkOverlay: 'rgba(0, 0, 0, 0.65)',
 
-  textPrimary: '#1A0F0A',
-  textSecondary: '#5C4A42',
-  textMuted: '#8C7A70',
-  border: '#E8E2D8',
-  divider: '#DCD4C8',
+  // Backward-Compatible Semantic Aliases (seamless migration from brown to Uber Eats green)
+  cafeBrown: '#06C167',
+  cafeBrownDark: '#05944F',
+  cafeBrownLight: '#10B981',
+  cafeBrownContainer: '#E8F8F0',
+  cafeCream: '#F6F6F6',
+  cafeCreamLight: '#FFFFFF',
+  cafeGold: '#06C167',
+  cafeGoldDark: '#05944F',
+  cafeGoldContainer: '#E8F8F0',
 
-  glassBackground: 'rgba(255, 255, 255, 0.85)',
-  glassBorder: 'rgba(255, 255, 255, 0.6)',
-  darkOverlay: 'rgba(26, 15, 10, 0.55)',
+  espressoDark: '#000000',
+  roastMedium: '#121212',
+  caramel: '#06C167',
+  matcha: '#05944F',
+  matchaLight: '#E8F8F0',
 };

@@ -60,7 +60,9 @@ export const QuantityStepper: React.FC<QuantityStepperProps> = ({
           size === 'sm' ? styles.addButtonSm : styles.addButtonMd,
         ]}
       >
-        <Text style={[Typography.labelLarge, { color: Colors.cafeBrown }]}>ADD</Text>
+        <Text style={[Typography.labelLarge, { color: Colors.uberGreen, fontWeight: '800' }]}>
+          ADD
+        </Text>
       </TouchableOpacity>
     );
   }
@@ -94,17 +96,22 @@ export const QuantityStepper: React.FC<QuantityStepperProps> = ({
 
 const styles = StyleSheet.create({
   addButton: {
-    backgroundColor: Colors.cafeCreamLight,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
-    borderColor: Colors.cafeBrown,
+    borderColor: Colors.uberGreen,
     borderRadius: Radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 36,
+    shadowColor: Colors.uberGreen,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
   },
   addButtonMd: {
     paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
   },
   addButtonSm: {
     paddingVertical: Spacing.xs,
@@ -113,9 +120,14 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.cafeBrown,
+    backgroundColor: Colors.uberGreen,
     borderRadius: Radius.sm,
     overflow: 'hidden',
+    shadowColor: Colors.uberGreen,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 3,
   },
   containerMd: {
     height: 38,
@@ -127,19 +139,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.cafeBrown,
+    backgroundColor: Colors.uberGreen,
     minWidth: 32,
     minHeight: 36,
   },
   countContainer: {
-    backgroundColor: Colors.cafeBrown,
+    backgroundColor: Colors.uberGreen,
     paddingHorizontal: Spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 24,
+    minWidth: 26,
   },
   countText: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

@@ -20,6 +20,7 @@ import { CafeCard } from '@/components/common/Card';
 import { QuantityStepper } from '@/components/specific/QuantityStepper';
 import { VegIndicator } from '@/components/specific/VegIndicator';
 import { FloatingCartBar } from '@/components/specific/FloatingCartBar';
+import { AnimatedSearchTicker } from '@/components/specific/AnimatedSearchTicker';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing, Elevation } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
@@ -135,6 +136,19 @@ export default function HomeScreen() {
             ))}
           </ScrollView>
         </View>
+
+        {/* Search Bar Ticker Shortcut */}
+        <TouchableOpacity
+          style={styles.searchShortcutBar}
+          activeOpacity={0.9}
+          onPress={() => router.push('/(tabs)/menu')}
+        >
+          <Ionicons name="search" size={20} color={Colors.uberGreen} style={{ marginRight: 10 }} />
+          <Text style={styles.searchShortcutText}>Search 'Cold Brew', 'Matcha', 'Pastries'...</Text>
+          <View style={styles.searchShortcutBadge}>
+            <Ionicons name="options-outline" size={16} color="#FFFFFF" />
+          </View>
+        </TouchableOpacity>
 
         {/* Hero Banner Bento Card */}
         <View style={styles.heroWrapper}>
@@ -443,8 +457,35 @@ const styles = StyleSheet.create({
     borderRadius: 31,
     padding: 2.5,
     borderWidth: 2,
-    borderColor: Colors.cafeGold,
+    borderColor: Colors.uberGreen,
     backgroundColor: Colors.surface,
+  },
+  searchShortcutBar: {
+    marginHorizontal: Spacing.base,
+    marginTop: Spacing.md,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.full,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    ...Elevation.sm,
+  },
+  searchShortcutText: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  searchShortcutBadge: {
+    backgroundColor: Colors.uberGreen,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   storyAvatar: {
     width: '100%',

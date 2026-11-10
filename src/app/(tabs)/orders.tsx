@@ -14,6 +14,7 @@ import { apiClient } from '@/api/client';
 import { useSocket } from '@/hooks/useSocket';
 import { CafeCard } from '@/components/common/Card';
 import { StatusBadge } from '@/components/specific/StatusBadge';
+import { OrderTimeline } from '@/components/specific/OrderTimeline';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
@@ -81,9 +82,10 @@ export default function OrdersScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} />}
+        showsVerticalScrollIndicator={false}
       >
         {isLoading ? (
-          <ActivityIndicator size="large" color={Colors.cafeBrown} style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color={Colors.uberGreen} style={{ marginTop: 40 }} />
         ) : filteredOrders.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="receipt-outline" size={48} color={Colors.textMuted} />
@@ -104,13 +106,19 @@ export default function OrdersScreen() {
               <CafeCard key={order.id} variant="elevated" style={styles.orderCard}>
                 <View style={styles.cardHeader}>
                   <View>
-                    <Text style={[Typography.titleMedium, { color: Colors.textPrimary }]}>
+                    <Text style={[Typography.titleMedium, { color: Colors.textPrimary, fontWeight: '800' }]}>
                       Order #{order.orderNumber}
                     </Text>
                     <Text style={[Typography.bodySmall, { color: Colors.textMuted }]}>{dateStr}</Text>
                   </View>
                   <StatusBadge status={order.status} />
                 </View>
+
+                {/* Interactive Status Timeline (Swiggy/Zomato style) */}
+                <OrderTimeline
+                  status={order.status}
+                  tableNumber={order.table?.tableNumber}
+                />
 
                 {/* Items Summary */}
                 <View style={styles.itemsSummary}>
@@ -128,14 +136,17 @@ export default function OrdersScreen() {
 
                 {/* Footer with Table & Total */}
                 <View style={styles.cardFooter}>
-                  <Text style={[Typography.bodySmall, { color: Colors.textSecondary }]}>
-                    {order.table?.tableNumber ? `Table ${order.table.tableNumber}` : 'Dine-In'}
-                  </Text>
+                  <View style={styles.tableBadge}>
+                    <Ionicons name="restaurant-outline" size={13} color={Colors.uberGreenDark} />
+                    <Text style={styles.tableText}>
+                      {order.table?.tableNumber ? `Table ${order.table.tableNumber}` : 'Dine-In Table 1'}
+                    </Text>
+                  </View>
                   <View style={styles.totalRow}>
                     <Text style={[Typography.bodySmall, { color: Colors.textMuted, marginRight: 6 }]}>
                       Total:
                     </Text>
-                    <Text style={[Typography.labelLarge, { color: Colors.cafeBrown }]}>
+                    <Text style={[Typography.labelLarge, { color: Colors.textPrimary, fontWeight: '800', fontSize: 16 }]}>
                       {formatPaise(order.totalPaise)}
                     </Text>
                   </View>
@@ -163,28 +174,30 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   filterTab: {
-    paddingVertical: 6,
+    paddingVertical: 7,
     paddingHorizontal: Spacing.base,
     borderRadius: Radius.full,
     marginRight: Spacing.sm,
     backgroundColor: Colors.background,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.border,
   },
   filterTabActive: {
-    backgroundColor: Colors.cafeBrown,
-    borderColor: Colors.cafeBrown,
+    backgroundColor: Colors.uberGreen,
+    borderColor: Colors.uberGreen,
   },
   filterTabText: {
     ...Typography.labelMedium,
     color: Colors.textSecondary,
+    fontWeight: '700',
   },
   filterTabTextActive: {
     color: '#FFFFFF',
+    fontWeight: '800',
   },
   scrollContent: {
     padding: Spacing.base,
-    paddingBottom: 40,
+    paddingBottom: 60,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -193,6 +206,9 @@ const styles = StyleSheet.create({
   },
   orderCard: {
     marginBottom: Spacing.base,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -208,13 +224,15 @@ const styles = StyleSheet.create({
   itemRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 2,
+    paddingVertical: 3,
   },
   itemQtyName: {
     color: Colors.textPrimary,
+    fontWeight: '600',
   },
   itemPrice: {
     color: Colors.textSecondary,
+    fontWeight: '600',
   },
   cardFooter: {
     flexDirection: 'row',
@@ -223,6 +241,20 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.sm,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
+  },
+  tableBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.uberGreenContainer,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    gap: 4,
+  },
+  tableText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.uberGreenDark,
   },
   totalRow: {
     flexDirection: 'row',
