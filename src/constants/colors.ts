@@ -1,0 +1,30 @@
+export const Colors = {
+  cafeBrown: '#6F4E37',
+  cafeBrownDark: '#4A3324',
+  cafeBrownLight: '#8D6E57',
+  cafeBrownContainer: '#F3ECE7',
+  cafeCream: '#F5F0E8',
+  cafeCreamLight: '#FAF8F5',
+  cafeGold: '#C89B3C',
+  cafeGoldDark: '#9E7422',
+  cafeGoldContainer: '#FFF8EC',
+
+  success: '#2E7D32',
+  successContainer: '#E8F5E9',
+  warning: '#ED6C02',
+  warningContainer: '#FFF3E0',
+  error: '#D32F2F',
+  errorContainer: '#FFEBEE',
+  info: '#0288D1',
+  infoContainer: '#E1F5FE',
+
+  background: '#F8F6F2',
+  surface: '#FFFFFF',
+  surfaceVariant: '#F3ECE7',
+
+  textPrimary: '#1C1917',
+  textSecondary: '#57534E',
+  textMuted: '#78716C',
+  border: '#E7E5E4',
+  divider: '#D6D3D1',
+};
