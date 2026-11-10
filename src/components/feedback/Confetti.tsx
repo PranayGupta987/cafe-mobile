@@ -77,27 +77,27 @@ interface ConfettiHostProps {
   onComplete?: () => void;
 }
 
+const COLORS = [Colors.cafeBrown, Colors.cafeGold, Colors.success, '#FFB703', '#FB8500', '#8ECAE6'];
+const PIECES_COUNT = 30;
+const STATIC_PIECES = Array.from({ length: PIECES_COUNT }).map((_, index) => ({
+  id: index,
+  color: COLORS[index % COLORS.length],
+  startX: SCREEN_WIDTH / 2 + (((index * 37) % 200) - 100),
+  delay: (index * 17) % 200,
+}));
+
 export const ConfettiHost: React.FC<ConfettiHostProps> = ({ visible, onComplete }) => {
   if (!visible) return null;
 
-  const colors = [Colors.cafeBrown, Colors.cafeGold, Colors.success, '#FFB703', '#FB8500', '#8ECAE6'];
-  const piecesCount = 30;
-  const pieces = Array.from({ length: piecesCount }).map((_, index) => ({
-    id: index,
-    color: colors[index % colors.length],
-    startX: SCREEN_WIDTH / 2 + (Math.random() * 200 - 100),
-    delay: Math.random() * 200,
-  }));
-
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {pieces.map((p) => (
+      {STATIC_PIECES.map((p) => (
         <ConfettiPiece
           key={p.id}
           color={p.color}
           startX={p.startX}
           delay={p.delay}
-          onFinish={p.id === piecesCount - 1 ? onComplete : undefined}
+          onFinish={p.id === PIECES_COUNT - 1 ? onComplete : undefined}
         />
       ))}
     </View>
