@@ -1,5 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSequence,
+  withSpring,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
@@ -19,15 +25,30 @@ export const QuantityStepper: React.FC<QuantityStepperProps> = ({
   onDecrement,
   size = 'md',
 }) => {
+  const countScale = useSharedValue(1);
+
+  const triggerBounce = () => {
+    countScale.value = withSequence(
+      withSpring(1.25, { damping: 4, stiffness: 200 }),
+      withSpring(1, { damping: 6 })
+    );
+  };
+
   const handleIncrement = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerBounce();
     onIncrement();
   };
 
   const handleDecrement = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerBounce();
     onDecrement();
   };
+
+  const countAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: countScale.value }],
+  }));
 
   if (quantity === 0) {
     return (
@@ -51,21 +72,21 @@ export const QuantityStepper: React.FC<QuantityStepperProps> = ({
         onPress={handleDecrement}
         style={styles.actionButton}
       >
-        <Ionicons name="remove" size={size === 'sm' ? 14 : 18} color={Colors.cafeBrown} />
+        <Ionicons name="remove" size={size === 'sm' ? 14 : 18} color="#FFFFFF" />
       </TouchableOpacity>
 
-      <View style={styles.countContainer}>
+      <Animated.View style={[styles.countContainer, countAnimatedStyle]}>
         <Text style={[size === 'sm' ? Typography.labelMedium : Typography.labelLarge, styles.countText]}>
           {quantity}
         </Text>
-      </View>
+      </Animated.View>
 
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={handleIncrement}
         style={styles.actionButton}
       >
-        <Ionicons name="add" size={size === 'sm' ? 14 : 18} color={Colors.cafeBrown} />
+        <Ionicons name="add" size={size === 'sm' ? 14 : 18} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
   );
@@ -79,6 +100,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 36,
   },
   addButtonMd: {
     paddingVertical: Spacing.sm,
@@ -96,22 +118,25 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   containerMd: {
-    height: 36,
+    height: 38,
   },
   containerSm: {
-    height: 28,
+    height: 30,
   },
   actionButton: {
-    paddingHorizontal: Spacing.sm,
+    paddingHorizontal: Spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.cafeBrown,
+    minWidth: 32,
+    minHeight: 36,
   },
   countContainer: {
     backgroundColor: Colors.cafeBrown,
     paddingHorizontal: Spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 24,
   },
   countText: {
     color: '#FFFFFF',

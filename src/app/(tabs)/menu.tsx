@@ -18,8 +18,9 @@ import { CafeCard } from '@/components/common/Card';
 import { QuantityStepper } from '@/components/specific/QuantityStepper';
 import { VegIndicator } from '@/components/specific/VegIndicator';
 import { FloatingCartBar } from '@/components/specific/FloatingCartBar';
+import { Shimmer } from '@/components/common/Shimmer';
 import { Colors } from '@/constants/colors';
-import { Radius, Spacing } from '@/constants/dimens';
+import { Radius, Spacing, Elevation } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
 import { formatPaise } from '@/utils/currency';
 import { ApiResponse } from '@/types/auth';
@@ -29,7 +30,6 @@ export default function MenuScreen() {
   const {
     items: cartItems,
     addItem,
-    incrementItem,
     decrementItem,
     getTotalItems,
     getTotalPaise,
@@ -149,7 +149,18 @@ export default function MenuScreen() {
       {/* Menu Item List */}
       <ScrollView contentContainerStyle={styles.listContent}>
         {isLoading ? (
-          <ActivityIndicator size="large" color={Colors.cafeBrown} style={{ marginTop: 40 }} />
+          <View style={{ gap: Spacing.md }}>
+            {[1, 2, 3, 4].map((key) => (
+              <View key={key} style={styles.shimmerCard}>
+                <View style={{ flex: 1, gap: 8 }}>
+                  <Shimmer width={140} height={18} />
+                  <Shimmer width={80} height={14} />
+                  <Shimmer width="85%" height={12} />
+                </View>
+                <Shimmer width={80} height={36} radius={Radius.sm} />
+              </View>
+            ))}
+          </View>
         ) : filteredItems.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="restaurant-outline" size={48} color={Colors.textMuted} />
@@ -333,5 +344,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
+  },
+  shimmerCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    padding: Spacing.base,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    ...Elevation.sm,
   },
 });

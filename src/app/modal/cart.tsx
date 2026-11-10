@@ -22,6 +22,7 @@ import { Radius, Spacing } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
 import { formatPaise } from '@/utils/currency';
 import { ApiResponse } from '@/types/auth';
+import { ConfettiHost } from '@/components/feedback/Confetti';
 
 export default function CartModal() {
   const router = useRouter();
@@ -149,6 +150,7 @@ export default function CartModal() {
   if (placedOrderNumber !== null) {
     return (
       <View style={styles.successContainer}>
+        <ConfettiHost visible={true} />
         <View style={styles.successIconCircle}>
           <Ionicons name="checkmark" size={64} color={Colors.success} />
         </View>

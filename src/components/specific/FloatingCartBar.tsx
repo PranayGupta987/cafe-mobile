@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
@@ -28,7 +29,11 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
   };
 
   return (
-    <View style={styles.wrapper}>
+    <Animated.View
+      entering={FadeInDown.springify().damping(15)}
+      exiting={FadeOutDown.duration(200)}
+      style={styles.wrapper}
+    >
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={handlePress}
@@ -51,7 +56,7 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
           <Ionicons name="arrow-forward" size={16} color="#FFFFFF" style={{ marginLeft: 4 }} />
         </View>
       </TouchableOpacity>
-    </View>
+    </Animated.View>
   );
 };
 
