@@ -1,7 +1,30 @@
 import React from 'react';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { Colors } from '@/constants/colors';
+import { useCartStore } from '@/stores/cartStore';
+
+function HeaderCartButton() {
+  const router = useRouter();
+  const totalItems = useCartStore((s) => s.getTotalItems());
+
+  return (
+    <TouchableOpacity
+      style={styles.headerCartButton}
+      onPress={() => router.push('/modal/cart')}
+      accessibilityRole="button"
+      accessibilityLabel={`Shopping cart, ${totalItems} items`}
+    >
+      <Ionicons name="cart-outline" size={24} color={Colors.cafeBrown} />
+      {totalItems > 0 ? (
+        <View style={styles.headerBadge}>
+          <Text style={styles.headerBadgeText}>{totalItems}</Text>
+        </View>
+      ) : null}
+    </TouchableOpacity>
+  );
+}
 
 export default function TabsLayout() {
   return (
@@ -16,6 +39,7 @@ export default function TabsLayout() {
         headerTitleStyle: {
           fontWeight: '700',
         },
+        headerRight: () => <HeaderCartButton />,
         tabBarActiveTintColor: Colors.cafeBrown,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarStyle: {
@@ -76,3 +100,30 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  headerCartButton: {
+    marginRight: 16,
+    padding: 6,
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: Colors.error,
+    borderRadius: 9,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  headerBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+});

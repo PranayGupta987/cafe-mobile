@@ -60,6 +60,13 @@ export default function RootLayout() {
                 title: 'Book a Table',
               }}
             />
+            <Stack.Screen
+              name="modal/item-detail"
+              options={{
+                presentation: 'modal',
+                headerShown: false,
+              }}
+            />
           </Stack>
         </SocketProvider>
       </QueryClientProvider>

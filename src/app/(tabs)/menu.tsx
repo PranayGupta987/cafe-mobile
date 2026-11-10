@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   Switch,
   StyleSheet,
-  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 import { useCartStore } from '@/stores/cartStore';
@@ -24,6 +25,7 @@ import { Radius, Spacing, Elevation } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
 import { formatPaise } from '@/utils/currency';
 import { ApiResponse } from '@/types/auth';
+import { MediaAssets } from '@/constants/media';
 
 export default function MenuScreen() {
   const router = useRouter();
@@ -72,15 +74,31 @@ export default function MenuScreen() {
     return cartItems.find((i) => i.menuItemId === id)?.quantity || 0;
   };
 
+  const handleOpenDetail = (item: any) => {
+    router.push({
+      pathname: '/modal/item-detail',
+      params: {
+        id: item.id,
+        name: item.name,
+        pricePaise: item.pricePaise.toString(),
+        description: item.description,
+        imageUrl: item.imageUrl || MediaAssets.fallbackByKeyword(item.name),
+        isVeg: item.isVeg ? 'true' : 'false',
+        isSpicy: item.isSpicy ? 'true' : 'false',
+        categoryName: item.category?.name || 'Artisan Special',
+      },
+    });
+  };
+
   return (
     <View style={styles.container}>
       {/* Search & Filter Header */}
       <View style={styles.header}>
         <View style={styles.searchBar}>
-          <Ionicons name="search-outline" size={20} color={Colors.textMuted} />
+          <Ionicons name="search" size={18} color={Colors.textMuted} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search coffee, drinks, snacks..."
+            placeholder="Search pour-overs, pastries, beans..."
             placeholderTextColor={Colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -93,11 +111,14 @@ export default function MenuScreen() {
         </View>
 
         <View style={styles.vegToggleRow}>
-          <Text style={[Typography.bodyMedium, { color: Colors.textPrimary }]}>Veg Only</Text>
+          <Text style={styles.vegToggleLabel}>Veg Only</Text>
           <Switch
             value={vegOnly}
-            onValueChange={setVegOnly}
-            trackColor={{ false: Colors.border, true: '#2E7D32' }}
+            onValueChange={(val) => {
+              Haptics.selectionAsync();
+              setVegOnly(val);
+            }}
+            trackColor={{ false: Colors.border, true: Colors.success }}
             thumbColor="#FFFFFF"
             style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
           />
@@ -106,13 +127,20 @@ export default function MenuScreen() {
 
       {/* Category Pills */}
       <View style={styles.categoryPillsContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryScroll}
+        >
           <TouchableOpacity
             style={[
               styles.categoryPill,
               selectedCategory === null && styles.categoryPillActive,
             ]}
-            onPress={() => setSelectedCategory(null)}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setSelectedCategory(null);
+            }}
           >
             <Text
               style={[
@@ -120,7 +148,7 @@ export default function MenuScreen() {
                 selectedCategory === null && styles.categoryPillTextActive,
               ]}
             >
-              All Items
+              All Items ({itemsData?.length || 0})
             </Text>
           </TouchableOpacity>
 
@@ -131,7 +159,10 @@ export default function MenuScreen() {
                 styles.categoryPill,
                 selectedCategory === cat.id && styles.categoryPillActive,
               ]}
-              onPress={() => setSelectedCategory(cat.id)}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setSelectedCategory(cat.id);
+              }}
             >
               <Text
                 style={[
@@ -147,17 +178,20 @@ export default function MenuScreen() {
       </View>
 
       {/* Menu Item List */}
-      <ScrollView contentContainerStyle={styles.listContent}>
+      <ScrollView
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      >
         {isLoading ? (
           <View style={{ gap: Spacing.md }}>
             {[1, 2, 3, 4].map((key) => (
               <View key={key} style={styles.shimmerCard}>
-                <View style={{ flex: 1, gap: 8 }}>
+                <Shimmer width={100} height={100} radius={Radius.md} />
+                <View style={{ flex: 1, gap: 8, marginLeft: 12 }}>
                   <Shimmer width={140} height={18} />
                   <Shimmer width={80} height={14} />
                   <Shimmer width="85%" height={12} />
                 </View>
-                <Shimmer width={80} height={36} radius={Radius.sm} />
               </View>
             ))}
           </View>
@@ -165,56 +199,78 @@ export default function MenuScreen() {
           <View style={styles.emptyContainer}>
             <Ionicons name="restaurant-outline" size={48} color={Colors.textMuted} />
             <Text style={[Typography.bodyMedium, { color: Colors.textMuted, marginTop: Spacing.md }]}>
-              No items found matching your filter
+              No culinary items found matching your filters
             </Text>
           </View>
         ) : (
           filteredItems.map((item) => {
             const qty = getItemQuantity(item.id);
+            const imageUrl = item.imageUrl || MediaAssets.fallbackByKeyword(item.name);
+
             return (
               <CafeCard key={item.id} variant="elevated" style={styles.itemCard}>
-                <View style={styles.itemRow}>
+                <TouchableOpacity
+                  activeOpacity={0.92}
+                  onPress={() => handleOpenDetail(item)}
+                  style={styles.itemTouchArea}
+                >
+                  {/* Food Media Thumbnail */}
+                  <View style={styles.thumbWrapper}>
+                    <Image
+                      source={{ uri: imageUrl }}
+                      style={styles.thumbImage}
+                      contentFit="cover"
+                      transition={200}
+                    />
+                    <View style={styles.thumbVegBadge}>
+                      <VegIndicator isVeg={item.isVeg} size={11} />
+                    </View>
+                  </View>
+
+                  {/* Details Body */}
                   <View style={styles.itemDetails}>
                     <View style={styles.metaRow}>
-                      <VegIndicator isVeg={item.isVeg} size={14} />
                       {item.isSpicy ? (
-                        <Ionicons
-                          name="flame"
-                          size={14}
-                          color={Colors.error}
-                          style={{ marginLeft: 4 }}
-                        />
+                        <View style={styles.spicyTag}>
+                          <Ionicons name="flame" size={11} color={Colors.error} />
+                          <Text style={styles.spicyText}>Spicy</Text>
+                        </View>
                       ) : null}
                       {item.category?.name ? (
                         <Text style={styles.categoryTag}>{item.category.name}</Text>
                       ) : null}
                     </View>
 
-                    <Text style={[Typography.titleMedium, styles.itemName]}>{item.name}</Text>
-                    <Text style={[Typography.bodyMedium, styles.itemPrice]}>
-                      {formatPaise(item.pricePaise)}
+                    <Text style={styles.itemName} numberOfLines={1}>
+                      {item.name}
                     </Text>
-                    <Text style={[Typography.bodySmall, styles.itemDesc]} numberOfLines={2}>
+                    <Text style={styles.itemDesc} numberOfLines={2}>
                       {item.description}
                     </Text>
-                  </View>
 
-                  <View style={styles.stepperContainer}>
-                    <QuantityStepper
-                      quantity={qty}
-                      onIncrement={() =>
-                        addItem({
-                          menuItemId: item.id,
-                          name: item.name,
-                          pricePaise: item.pricePaise,
-                          imageUrl: item.imageUrl,
-                          isVeg: item.isVeg,
-                        })
-                      }
-                      onDecrement={() => decrementItem(item.id)}
-                    />
+                    <View style={styles.bottomRow}>
+                      <Text style={styles.itemPrice}>
+                        {formatPaise(item.pricePaise)}
+                      </Text>
+
+                      <View style={styles.stepperContainer}>
+                        <QuantityStepper
+                          quantity={qty}
+                          onIncrement={() =>
+                            addItem({
+                              menuItemId: item.id,
+                              name: item.name,
+                              pricePaise: item.pricePaise,
+                              imageUrl,
+                              isVeg: item.isVeg,
+                            })
+                          }
+                          onDecrement={() => decrementItem(item.id)}
+                        />
+                      </View>
+                    </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               </CafeCard>
             );
           })
@@ -246,6 +302,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+    gap: 12,
   },
   searchBar: {
     flex: 1,
@@ -253,8 +310,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.background,
     paddingHorizontal: Spacing.md,
-    height: 40,
-    borderRadius: Radius.md,
+    height: 42,
+    borderRadius: Radius.full,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -267,7 +324,12 @@ const styles = StyleSheet.create({
   vegToggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: Spacing.md,
+    gap: 4,
+  },
+  vegToggleLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.textPrimary,
   },
   categoryPillsContainer: {
     backgroundColor: Colors.surface,
@@ -277,13 +339,13 @@ const styles = StyleSheet.create({
   },
   categoryScroll: {
     paddingHorizontal: Spacing.base,
+    gap: 8,
   },
   categoryPill: {
-    paddingVertical: 6,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
     borderRadius: Radius.full,
     backgroundColor: Colors.background,
-    marginRight: Spacing.sm,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -292,66 +354,115 @@ const styles = StyleSheet.create({
     borderColor: Colors.cafeBrown,
   },
   categoryPillText: {
-    ...Typography.labelMedium,
+    fontSize: 13,
+    fontWeight: '600',
     color: Colors.textSecondary,
   },
   categoryPillTextActive: {
     color: '#FFFFFF',
+    fontWeight: '700',
   },
   listContent: {
     padding: Spacing.base,
-    paddingBottom: 90,
+    paddingBottom: 130,
+    gap: 12,
   },
-  itemCard: {
-    marginBottom: Spacing.md,
-  },
-  itemRow: {
+  shimmerCard: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  itemDetails: {
-    flex: 1,
-    marginRight: Spacing.md,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  categoryTag: {
-    ...Typography.labelSmall,
-    color: Colors.textMuted,
-    marginLeft: 6,
-    textTransform: 'uppercase',
-  },
-  itemName: {
-    color: Colors.textPrimary,
-  },
-  itemPrice: {
-    color: Colors.cafeBrown,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  itemDesc: {
-    color: Colors.textSecondary,
-    marginTop: 4,
-  },
-  stepperContainer: {
-    alignItems: 'flex-end',
+    padding: Spacing.md,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
   },
-  shimmerCard: {
+  itemCard: {
     backgroundColor: Colors.surface,
     borderRadius: Radius.lg,
-    padding: Spacing.base,
+    padding: 0,
+    overflow: 'hidden',
+  },
+  itemTouchArea: {
+    flexDirection: 'row',
+    padding: Spacing.md,
+  },
+  thumbWrapper: {
+    width: 104,
+    height: 104,
+    borderRadius: Radius.md,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: Colors.background,
+  },
+  thumbImage: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbVegBadge: {
+    position: 'absolute',
+    top: 5,
+    left: 5,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    padding: 3,
+    borderRadius: 4,
+  },
+  itemDetails: {
+    flex: 1,
+    marginLeft: Spacing.md,
+    justifyContent: 'space-between',
+  },
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+  },
+  spicyTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: Colors.errorContainer,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  spicyText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.error,
+  },
+  categoryTag: {
+    fontSize: 11,
+    color: Colors.cafeGoldDark,
+    fontWeight: '700',
+  },
+  itemName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginTop: 2,
+  },
+  itemDesc: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  bottomRow: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    ...Elevation.sm,
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  itemPrice: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: Colors.cafeBrown,
+  },
+  stepperContainer: {
+    alignItems: 'flex-end',
   },
 });

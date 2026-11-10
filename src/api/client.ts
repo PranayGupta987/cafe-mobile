@@ -1,6 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { Storage } from '@/utils/storage';
-import { ApiResponse } from '@/types/auth';
+import { extractAuthPayload, ApiResponse } from '@/types/auth';
 
 export const API_BASE_URL = 'https://cafeapp-backend-sgj7.onrender.com/api/v1';
 export const SOCKET_URL = 'https://cafeapp-backend-sgj7.onrender.com';
@@ -14,10 +14,10 @@ export const apiClient = axios.create({
 });
 
 let isRefreshing = false;
-let failedQueue: Array<{
+let failedQueue: {
   resolve: (token: string) => void;
   reject: (error: any) => void;
-}> = [];
+}[] = [];
 
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach((promise) => {
@@ -84,24 +84,26 @@ apiClient.interceptors.response.use(
       }
 
       // Explicit refresh call without using apiClient to avoid interceptor recursion
-      const refreshResponse = await axios.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
+      const refreshResponse = await axios.post(
         `${API_BASE_URL}/auth/refresh`,
         { refreshToken },
         { headers: { 'Content-Type': 'application/json' } }
       );
 
-      const data = refreshResponse.data.data;
-      if (!refreshResponse.data.success || !data) {
+      const payload = extractAuthPayload(refreshResponse.data);
+      if (!payload?.accessToken) {
         throw new Error('Refresh token rejected');
       }
 
-      await Storage.setAccessToken(data.accessToken);
-      await Storage.setRefreshToken(data.refreshToken);
+      await Storage.setAccessToken(payload.accessToken);
+      if (payload.refreshToken) {
+        await Storage.setRefreshToken(payload.refreshToken);
+      }
 
-      processQueue(null, data.accessToken);
+      processQueue(null, payload.accessToken);
 
       if (originalRequest.headers) {
-        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+        originalRequest.headers.Authorization = `Bearer ${payload.accessToken}`;
       }
 
       return apiClient(originalRequest);

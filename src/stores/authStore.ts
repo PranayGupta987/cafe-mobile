@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Storage } from '@/utils/storage';
 import { apiClient } from '@/api/client';
-import { User, AuthResponseData, ApiResponse } from '@/types/auth';
+import { User } from '@/types/auth';
 
 interface AuthState {
   user: User | null;
@@ -36,9 +36,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return false;
       }
 
-      const response = await apiClient.get<ApiResponse<User>>('/auth/me');
-      if (response.data.success && response.data.data) {
-        set({ user: response.data.data, isAuthenticated: true, isLoading: false });
+      const response = await apiClient.get<any>('/auth/me');
+      const user = response.data.user || response.data.data;
+      if (user) {
+        set({ user, isAuthenticated: true, isLoading: false });
         return true;
       }
 

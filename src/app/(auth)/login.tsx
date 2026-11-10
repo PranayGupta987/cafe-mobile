@@ -17,7 +17,7 @@ import { CafeButton } from '@/components/common/Button';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
-import { ApiResponse, AuthResponseData } from '@/types/auth';
+import { extractAuthPayload, extractErrorMessage } from '@/types/auth';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -39,24 +39,24 @@ export default function LoginScreen() {
     setError(null);
 
     try {
-      const response = await apiClient.post<ApiResponse<AuthResponseData>>('/auth/login', {
+      const response = await apiClient.post<any>('/auth/login', {
         email: email.trim().toLowerCase(),
         password,
       });
 
-      const data = response.data.data;
-      if (response.data.success && data) {
-        await setAuth(data.user, data.tokens.accessToken, data.tokens.refreshToken);
-        if (data.user.role === 'KITCHEN' || data.user.role === 'CAFE_STAFF') {
+      const payload = extractAuthPayload(response.data);
+      if (payload) {
+        await setAuth(payload.user, payload.accessToken, payload.refreshToken);
+        if (payload.user.role === 'KITCHEN' || payload.user.role === 'CAFE_STAFF') {
           router.replace('/kitchen');
         } else {
           router.replace('/(tabs)/home');
         }
       } else {
-        setError(response.data.message || 'Login failed');
+        setError(response.data?.message || 'Login failed');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || err.message || 'Invalid email or password');
+      setError(extractErrorMessage(err, 'Invalid email or password'));
     } finally {
       setLoading(false);
     }

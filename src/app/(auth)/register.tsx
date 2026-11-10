@@ -17,7 +17,7 @@ import { CafeButton } from '@/components/common/Button';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
-import { ApiResponse, AuthResponseData } from '@/types/auth';
+import { extractAuthPayload, extractErrorMessage } from '@/types/auth';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -27,12 +27,28 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password.trim()) {
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPhone = phone.trim();
+
+    if (!trimmedName || !trimmedEmail || !password.trim()) {
       setError('Please fill in all required fields');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 
@@ -40,22 +56,22 @@ export default function RegisterScreen() {
     setError(null);
 
     try {
-      const response = await apiClient.post<ApiResponse<AuthResponseData>>('/auth/register', {
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        phone: phone.trim() || undefined,
+      const response = await apiClient.post<any>('/auth/register', {
+        name: trimmedName,
+        email: trimmedEmail,
+        phone: trimmedPhone || undefined,
         password,
       });
 
-      const data = response.data.data;
-      if (response.data.success && data) {
-        await setAuth(data.user, data.tokens.accessToken, data.tokens.refreshToken);
+      const payload = extractAuthPayload(response.data);
+      if (payload) {
+        await setAuth(payload.user, payload.accessToken, payload.refreshToken);
         router.replace('/(tabs)/home');
       } else {
-        setError(response.data.message || 'Registration failed');
+        setError(response.data?.message || 'Registration failed');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || err.message || 'Registration failed');
+      setError(extractErrorMessage(err, 'Registration failed'));
     } finally {
       setLoading(false);
     }
@@ -68,6 +84,12 @@ export default function RegisterScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.headerContainer}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+          </TouchableOpacity>
           <Text style={[Typography.h1, styles.title]}>Create Account</Text>
           <Text style={[Typography.bodyMedium, styles.subtitle]}>
             Join our café community for seamless ordering
@@ -119,15 +141,27 @@ export default function RegisterScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="••••••••"
-              placeholderTextColor={Colors.textMuted}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+            <Text style={styles.label}>Password * (min. 8 characters)</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="••••••••"
+                placeholderTextColor={Colors.textMuted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color={Colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <CafeButton
@@ -136,6 +170,15 @@ export default function RegisterScreen() {
             loading={loading}
             style={styles.submitButton}
           />
+
+          <View style={styles.footerRow}>
+            <Text style={[Typography.bodyMedium, { color: Colors.textSecondary }]}>
+              Already have an account?{' '}
+            </Text>
+            <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+              <Text style={[Typography.labelLarge, { color: Colors.cafeBrown }]}>Sign In</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -154,6 +197,10 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     marginBottom: Spacing.xl,
+  },
+  backButton: {
+    marginBottom: Spacing.md,
+    alignSelf: 'flex-start',
   },
   title: {
     color: Colors.textPrimary,
@@ -201,7 +248,30 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textPrimary,
   },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.md,
+    fontSize: 15,
+    color: Colors.textPrimary,
+  },
+  eyeIcon: {
+    padding: Spacing.md,
+  },
   submitButton: {
     marginTop: Spacing.sm,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: Spacing.xl,
   },
 });

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
@@ -35,10 +36,16 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
       style={styles.wrapper}
     >
       <TouchableOpacity
-        activeOpacity={0.9}
+        activeOpacity={0.92}
         onPress={handlePress}
         style={styles.container}
       >
+        <LinearGradient
+          colors={['#2E1C14', '#1A0F0A']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={styles.leftSection}>
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{totalItems}</Text>
@@ -53,7 +60,9 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
 
         <View style={styles.rightSection}>
           <Text style={styles.viewCartText}>View Cart</Text>
-          <Ionicons name="arrow-forward" size={16} color="#FFFFFF" style={{ marginLeft: 4 }} />
+          <View style={styles.arrowIconWrap}>
+            <Ionicons name="arrow-forward" size={15} color="#FFFFFF" />
+          </View>
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -63,7 +72,7 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
 const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
-    bottom: Spacing.base,
+    bottom: 74,
     left: Spacing.base,
     right: Spacing.base,
     zIndex: 999,
@@ -72,46 +81,60 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.cafeBrown,
-    borderRadius: Radius.lg,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.base,
-    ...Elevation.md,
+    borderRadius: Radius.full,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(221, 161, 94, 0.3)',
+    ...Elevation.lg,
   },
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   badge: {
-    backgroundColor: '#FFFFFF',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    backgroundColor: Colors.caramel,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: Spacing.sm,
+    marginRight: Spacing.md,
   },
   badgeText: {
-    color: Colors.cafeBrown,
-    fontSize: 12,
-    fontWeight: '700',
+    color: '#1A0F0A',
+    fontSize: 13,
+    fontWeight: '800',
   },
   priceContainer: {},
   priceText: {
     color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
   subtext: {
-    color: Colors.cafeBrownContainer,
+    color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 11,
+    marginTop: 1,
   },
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
   viewCartText: {
     color: '#FFFFFF',
-    ...Typography.labelLarge,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  arrowIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

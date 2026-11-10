@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useCartStore } from '@/stores/cartStore';
 import { apiClient } from '@/api/client';
@@ -18,11 +19,12 @@ import { CafeButton } from '@/components/common/Button';
 import { QuantityStepper } from '@/components/specific/QuantityStepper';
 import { VegIndicator } from '@/components/specific/VegIndicator';
 import { Colors } from '@/constants/colors';
-import { Radius, Spacing } from '@/constants/dimens';
+import { Radius, Spacing, Elevation } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
 import { formatPaise } from '@/utils/currency';
 import { ApiResponse } from '@/types/auth';
 import { ConfettiHost } from '@/components/feedback/Confetti';
+import { MediaAssets } from '@/constants/media';
 
 export default function CartModal() {
   const router = useRouter();
@@ -161,7 +163,7 @@ export default function CartModal() {
           Order #{placedOrderNumber}
         </Text>
         <Text style={[Typography.bodyMedium, styles.successSubtitle]}>
-          Your order has been sent to the kitchen and will be served to Table {tableNumber || 1} shortly.
+          Your artisanal order has been dispatched to the barista and will be served to Table {tableNumber || 1} shortly.
         </Text>
         <CafeButton
           title="View My Orders"
@@ -177,17 +179,19 @@ export default function CartModal() {
   if (items.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="cart-outline" size={64} color={Colors.textMuted} />
+        <View style={styles.emptyIconCircle}>
+          <Ionicons name="cart-outline" size={48} color={Colors.cafeBrown} />
+        </View>
         <Text style={[Typography.h3, { marginTop: Spacing.base, color: Colors.textPrimary }]}>
-          Your cart is empty
+          Your basket is empty
         </Text>
-        <Text style={[Typography.bodyMedium, { color: Colors.textMuted, marginTop: Spacing.xs }]}>
-          Add items from the menu to start an order
+        <Text style={[Typography.bodyMedium, { color: Colors.textMuted, marginTop: Spacing.xs, textAlign: 'center', maxWidth: 260 }]}>
+          Explore our seasonal pour-overs, fresh sourdough, and chef specialties
         </Text>
         <CafeButton
-          title="Browse Menu"
-          onPress={() => router.back()}
-          style={{ marginTop: Spacing.xl }}
+          title="Explore Menu"
+          onPress={() => router.replace('/(tabs)/menu')}
+          style={{ marginTop: Spacing.xl, minWidth: 200 }}
         />
       </View>
     );
@@ -195,66 +199,95 @@ export default function CartModal() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Table Assignment Info */}
-        <CafeCard variant="flat" style={styles.tableInfoCard}>
+        <View style={styles.tableInfoCard}>
           <View style={styles.tableInfoRow}>
-            <Ionicons name="restaurant-outline" size={20} color={Colors.cafeBrown} />
-            <Text style={[Typography.titleMedium, { marginLeft: Spacing.sm, color: Colors.cafeBrownDark }]}>
-              {tableNumber ? `Dine-In at Table ${tableNumber}` : 'Dine-In at Table 1 (Default)'}
-            </Text>
+            <View style={styles.tableBadge}>
+              <Ionicons name="cafe" size={16} color="#FFFFFF" />
+            </View>
+            <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+              <Text style={styles.tableDineText}>
+                {tableNumber ? `Dine-In • Table ${tableNumber}` : 'Dine-In • Table 1 (Barista Counter)'}
+              </Text>
+              <Text style={styles.tableHintText}>Served directly to your table</Text>
+            </View>
+            <TouchableOpacity onPress={() => router.push('/modal/qr-scanner')}>
+              <Text style={styles.changeTableText}>Change</Text>
+            </TouchableOpacity>
           </View>
-        </CafeCard>
+        </View>
 
         {/* Items List */}
         <View style={styles.sectionContainer}>
-          <Text style={[Typography.titleMedium, { marginBottom: Spacing.sm }]}>Order Items</Text>
-          {items.map((item) => (
-            <View key={item.menuItemId} style={styles.cartItemRow}>
-              <View style={styles.cartItemDetails}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  {item.isVeg !== undefined ? <VegIndicator isVeg={item.isVeg} size={12} /> : null}
-                  <Text style={[Typography.titleMedium, { marginLeft: 6, flex: 1 }]} numberOfLines={1}>
-                    {item.name}
+          <Text style={styles.sectionTitle}>Order Items ({items.reduce((s, i) => s + i.quantity, 0)})</Text>
+          {items.map((item) => {
+            const img = item.imageUrl || MediaAssets.fallbackByKeyword(item.name);
+            return (
+              <View key={item.menuItemId} style={styles.cartItemRow}>
+                {/* Food Thumbnail */}
+                <Image
+                  source={{ uri: img }}
+                  style={styles.itemThumb}
+                  contentFit="cover"
+                  transition={200}
+                />
+
+                <View style={styles.cartItemDetails}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    {item.isVeg !== undefined ? <VegIndicator isVeg={item.isVeg} size={11} /> : null}
+                    <Text style={styles.cartItemName} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                  </View>
+                  {item.notes ? (
+                    <Text style={styles.cartItemNotes} numberOfLines={1}>
+                      {item.notes}
+                    </Text>
+                  ) : null}
+                  <Text style={styles.cartItemPrice}>
+                    {formatPaise(item.pricePaise * item.quantity)}
                   </Text>
                 </View>
-                <Text style={[Typography.bodyMedium, { color: Colors.cafeBrown, fontWeight: '700', marginTop: 2 }]}>
-                  {formatPaise(item.pricePaise * item.quantity)}
-                </Text>
-              </View>
 
-              <QuantityStepper
-                quantity={item.quantity}
-                size="sm"
-                onIncrement={() => incrementItem(item.menuItemId)}
-                onDecrement={() => decrementItem(item.menuItemId)}
-              />
-            </View>
-          ))}
+                <QuantityStepper
+                  quantity={item.quantity}
+                  size="sm"
+                  onIncrement={() => incrementItem(item.menuItemId)}
+                  onDecrement={() => decrementItem(item.menuItemId)}
+                />
+              </View>
+            );
+          })}
         </View>
 
         {/* Promo Code Input */}
         <CafeCard variant="elevated" style={styles.promoCard}>
-          <Text style={[Typography.labelMedium, { marginBottom: Spacing.sm }]}>Promo Code</Text>
+          <Text style={[Typography.labelMedium, { marginBottom: Spacing.sm, color: Colors.textSecondary }]}>
+            Have a voucher or coupon?
+          </Text>
           {appliedOffer ? (
             <View style={styles.appliedPromoRow}>
-              <View>
-                <Text style={[Typography.labelLarge, { color: Colors.success }]}>
-                  {appliedOffer.code} Applied
-                </Text>
-                <Text style={[Typography.bodySmall, { color: Colors.textSecondary }]}>
-                  {appliedOffer.title} (-{formatPaise(appliedOffer.discountPaise)})
-                </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Ionicons name="pricetag" size={20} color={Colors.success} />
+                <View>
+                  <Text style={[Typography.labelLarge, { color: Colors.success }]}>
+                    {appliedOffer.code} Applied
+                  </Text>
+                  <Text style={[Typography.bodySmall, { color: Colors.textSecondary }]}>
+                    {appliedOffer.title} (-{formatPaise(appliedOffer.discountPaise)})
+                  </Text>
+                </View>
               </View>
-              <TouchableOpacity onPress={removeOffer}>
-                <Text style={[Typography.labelMedium, { color: Colors.error }]}>Remove</Text>
+              <TouchableOpacity onPress={removeOffer} style={styles.removeCouponBtn}>
+                <Text style={styles.removeCouponText}>Remove</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.promoInputRow}>
               <TextInput
                 style={styles.promoInput}
-                placeholder="Enter coupon code"
+                placeholder="Enter coupon code (e.g. TASTE10)"
                 placeholderTextColor={Colors.textMuted}
                 value={promoInput}
                 onChangeText={setPromoInput}
@@ -273,12 +306,15 @@ export default function CartModal() {
 
         {/* Special Instructions */}
         <CafeCard variant="elevated" style={styles.instructionsCard}>
-          <Text style={[Typography.labelMedium, { marginBottom: Spacing.sm }]}>
-            Special Cooking Instructions
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.sm }}>
+            <Ionicons name="chatbubble-ellipses-outline" size={16} color={Colors.cafeBrown} />
+            <Text style={[Typography.labelMedium, { color: Colors.textPrimary }]}>
+              Notes for the Barista / Kitchen
+            </Text>
+          </View>
           <TextInput
             style={styles.instructionsInput}
-            placeholder="e.g. Less sugar, extra hot coffee..."
+            placeholder="e.g. Extra hot, oat milk preferred, sauce on the side..."
             placeholderTextColor={Colors.textMuted}
             value={specialInstructions}
             onChangeText={setSpecialInstructions}
@@ -298,8 +334,8 @@ export default function CartModal() {
 
           {discount > 0 ? (
             <View style={styles.billRow}>
-              <Text style={[Typography.bodyMedium, { color: Colors.success }]}>Promo Discount</Text>
-              <Text style={[Typography.bodyMedium, { color: Colors.success }]}>
+              <Text style={[Typography.bodyMedium, { color: Colors.success }]}>Promo Savings</Text>
+              <Text style={[Typography.bodyMedium, { color: Colors.success, fontWeight: '700' }]}>
                 -{formatPaise(discount)}
               </Text>
             </View>
@@ -311,19 +347,26 @@ export default function CartModal() {
           </View>
 
           <View style={[styles.billRow, styles.totalBillRow]}>
-            <Text style={Typography.titleMedium}>Total Amount</Text>
-            <Text style={[Typography.h2, { color: Colors.cafeBrown }]}>{formatPaise(total)}</Text>
+            <Text style={[Typography.titleMedium, { fontWeight: '800' }]}>To Pay</Text>
+            <Text style={[Typography.h2, { color: Colors.cafeBrown, fontWeight: '800' }]}>
+              {formatPaise(total)}
+            </Text>
           </View>
         </CafeCard>
       </ScrollView>
 
       {/* Checkout Footer */}
       <View style={styles.footer}>
+        <View style={styles.footerSummary}>
+          <Text style={styles.footerItemCount}>{items.reduce((s, i) => s + i.quantity, 0)} Items</Text>
+          <Text style={styles.footerTotal}>{formatPaise(total)}</Text>
+        </View>
         <CafeButton
-          title={`Place Order • ${formatPaise(total)}`}
+          title="Place Order"
           loading={isPlacingOrder}
           onPress={handlePlaceOrder}
           size="lg"
+          style={styles.placeOrderBtn}
         />
       </View>
     </View>
@@ -337,15 +380,42 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Spacing.base,
-    paddingBottom: 100,
+    paddingBottom: 110,
   },
   tableInfoCard: {
     marginBottom: Spacing.base,
-    backgroundColor: Colors.cafeBrownContainer,
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Elevation.sm,
   },
   tableInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  tableBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.cafeBrown,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tableDineText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  tableHintText: {
+    fontSize: 11,
+    color: Colors.textMuted,
+  },
+  changeTableText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.cafeBrown,
   },
   sectionContainer: {
     backgroundColor: Colors.surface,
@@ -354,18 +424,48 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.base,
     borderWidth: 1,
     borderColor: Colors.border,
+    ...Elevation.sm,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
   },
   cartItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.sm,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+  itemThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.background,
+  },
   cartItemDetails: {
     flex: 1,
-    marginRight: Spacing.md,
+    marginLeft: 12,
+    marginRight: Spacing.sm,
+  },
+  cartItemName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  cartItemNotes: {
+    fontSize: 11,
+    color: Colors.caramel,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  cartItemPrice: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: Colors.cafeBrown,
+    marginTop: 3,
   },
   promoCard: {
     marginBottom: Spacing.base,
@@ -381,8 +481,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: Radius.md,
     paddingHorizontal: Spacing.base,
-    height: 40,
-    fontSize: 14,
+    height: 42,
+    fontSize: 13,
     color: Colors.textPrimary,
   },
   appliedPromoRow: {
@@ -393,6 +493,15 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: Radius.md,
   },
+  removeCouponBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  removeCouponText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.error,
+  },
   instructionsCard: {
     marginBottom: Spacing.base,
   },
@@ -401,11 +510,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.md,
-    padding: Spacing.base,
-    fontSize: 14,
+    padding: Spacing.md,
+    fontSize: 13,
     color: Colors.textPrimary,
     textAlignVertical: 'top',
-    height: 70,
+    height: 64,
   },
   billCard: {
     marginBottom: Spacing.base,
@@ -420,6 +529,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
+    alignItems: 'center',
   },
   footer: {
     position: 'absolute',
@@ -427,15 +537,45 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: Colors.surface,
-    padding: Spacing.base,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.md,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    ...Elevation.lg,
+  },
+  footerSummary: {
+    flex: 0.8,
+  },
+  footerItemCount: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    fontWeight: '600',
+  },
+  footerTotal: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.cafeBrown,
+  },
+  placeOrderBtn: {
+    flex: 1.2,
   },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.xl,
+    backgroundColor: Colors.background,
+  },
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.cafeBrownContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   successContainer: {
     flex: 1,
