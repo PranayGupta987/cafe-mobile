@@ -132,7 +132,7 @@ export default function LoginScreen() {
 
           <View style={styles.footerRow}>
             <Text style={[Typography.bodyMedium, { color: Colors.textSecondary }]}>
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
             </Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
               <Text style={[Typography.labelLarge, { color: Colors.cafeBrown }]}>Register</Text>

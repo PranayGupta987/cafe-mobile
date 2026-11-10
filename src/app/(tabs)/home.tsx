@@ -14,7 +14,6 @@ import { apiClient } from '@/api/client';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { CafeCard } from '@/components/common/Card';
-import { CafeButton } from '@/components/common/Button';
 import { QuantityStepper } from '@/components/specific/QuantityStepper';
 import { VegIndicator } from '@/components/specific/VegIndicator';
 import { FloatingCartBar } from '@/components/specific/FloatingCartBar';
@@ -26,11 +25,9 @@ import { ApiResponse } from '@/types/auth';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
   const {
     items: cartItems,
     addItem,
-    incrementItem,
     decrementItem,
     getTotalItems,
     getTotalPaise,
@@ -41,7 +38,7 @@ export default function HomeScreen() {
   const totalPaise = getTotalPaise();
 
   // Fetch active cafe profile
-  const { data: cafeData } = useQuery({
+  useQuery({
     queryKey: ['cafe-profile'],
     queryFn: async () => {
       const res = await apiClient.get<ApiResponse<any>>('/cafe');
@@ -164,7 +161,7 @@ export default function HomeScreen() {
 
         {/* Chef's Recommended Specials */}
         <View style={styles.sectionContainer}>
-          <Text style={[Typography.h3, { marginBottom: Spacing.md }]}>Chef's Specials</Text>
+          <Text style={[Typography.h3, { marginBottom: Spacing.md }]}>Chef&apos;s Specials</Text>
           {itemsLoading ? (
             <ActivityIndicator size="small" color={Colors.cafeBrown} />
           ) : (
