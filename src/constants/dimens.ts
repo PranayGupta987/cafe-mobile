@@ -15,9 +15,16 @@ export const Radius = {
   sm: 8,
   md: 12,
   lg: 16,
+  card: 18,
   xl: 20,
+  organic: 22,
   xxl: 28,
+  sheet: 32,
   full: 9999,
+};
+
+export const TouchTarget = {
+  min: 48,
 };
 
 export const Elevation = {
@@ -41,5 +48,27 @@ export const Elevation = {
     shadowOpacity: 0.14,
     shadowRadius: 12,
     elevation: 8,
+  },
+  // Warm Ambient Shadow Palette for Boutique Dining
+  warmSm: {
+    shadowColor: '#362417',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  warmMd: {
+    shadowColor: '#362417',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  warmLg: {
+    shadowColor: '#362417',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    elevation: 10,
   },
 };

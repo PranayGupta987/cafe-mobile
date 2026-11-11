@@ -7,19 +7,21 @@ import {
   StyleSheet,
   Dimensions,
   TextInput,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
 import { Spacing, Radius, Elevation } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
 import { formatPaise } from '@/utils/currency';
 import { useCartStore } from '@/stores/cartStore';
 import { VegIndicator } from '@/components/specific/VegIndicator';
+import { DietaryBadge } from '@/components/specific/DietaryBadge';
 import { MediaAssets } from '@/constants/media';
+import { hapticFeedback } from '@/utils/haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -34,6 +36,7 @@ export default function ItemDetailModal() {
     isVeg?: string;
     isSpicy?: string;
     categoryName?: string;
+    isOutOfStock?: string;
   }>();
 
   const addItem = useCartStore((s) => s.addItem);
@@ -41,29 +44,37 @@ export default function ItemDetailModal() {
   const basePricePaise = parseInt(params.pricePaise || '0', 10);
   const isVeg = params.isVeg === 'true';
   const isSpicy = params.isSpicy === 'true';
+  const isOutOfStock = params.isOutOfStock === 'true';
   const displayImage = params.imageUrl || MediaAssets.fallbackByKeyword(params.name || '');
 
   // Customization Options
   const [selectedSize, setSelectedSize] = useState<'regular' | 'large'>('regular');
   const [selectedMilk, setSelectedMilk] = useState<'standard' | 'oat' | 'almond'>('standard');
+  const [espressoShot, setEspressoShot] = useState<'standard' | 'double' | 'ristretto' | 'decaf'>('standard');
   const [sweetness, setSweetness] = useState<'regular' | 'less' | 'zero'>('regular');
   const [notes, setNotes] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [notified, setNotified] = useState(false);
 
   const sizeExtraPaise = selectedSize === 'large' ? 4000 : 0;
   const milkExtraPaise = selectedMilk === 'oat' ? 3000 : selectedMilk === 'almond' ? 3500 : 0;
-  const unitPricePaise = basePricePaise + sizeExtraPaise + milkExtraPaise;
+  const shotExtraPaise = espressoShot === 'double' ? 2500 : 0;
+  const unitPricePaise = basePricePaise + sizeExtraPaise + milkExtraPaise + shotExtraPaise;
   const totalPricePaise = unitPricePaise * quantity;
 
   const handleAddToCart = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (isOutOfStock) return;
+    hapticFeedback.success();
+
     const sizeLabel = selectedSize === 'large' ? 'Large' : 'Regular';
     const milkLabel = selectedMilk === 'oat' ? 'Oat Milk' : selectedMilk === 'almond' ? 'Almond Milk' : '';
+    const shotLabel = espressoShot === 'double' ? 'Double Shot' : espressoShot === 'ristretto' ? 'Ristretto' : espressoShot === 'decaf' ? 'Decaf' : '';
     const sweetnessLabel = sweetness === 'less' ? '50% Sweet' : sweetness === 'zero' ? 'Unsweetened' : '';
 
     const customNotes = [
       sizeLabel,
       milkLabel,
+      shotLabel,
       sweetnessLabel,
       notes.trim(),
     ]
@@ -84,6 +95,12 @@ export default function ItemDetailModal() {
     router.back();
   };
 
+  const handleNotifyMe = () => {
+    setNotified(true);
+    hapticFeedback.success();
+    Alert.alert('Subscribed!', "We'll ping you the instant this artisan item is fresh out of the roaster & kitchen.");
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
@@ -100,209 +117,327 @@ export default function ItemDetailModal() {
             style={StyleSheet.absoluteFill}
           />
 
-          {/* Top Navigation Overlay */}
-          <View style={styles.navBar}>
-            <TouchableOpacity
-              style={styles.circleButton}
-              onPress={() => router.back()}
-              accessibilityLabel="Close"
-            >
-              <Ionicons name="close" size={22} color="#FFFFFF" />
-            </TouchableOpacity>
+          {/* Close Button */}
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => router.back()}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="close" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
 
-            <View style={styles.badgeRow}>
-              {params.categoryName ? (
-                <View style={styles.categoryBadge}>
-                  <Text style={styles.categoryBadgeText}>{params.categoryName}</Text>
-                </View>
-              ) : null}
+          {/* Micro-Badges on Hero */}
+          <View style={styles.heroBadgesRow}>
+            <View style={styles.heroPill}>
+              <Ionicons name="flash" size={13} color="#06C167" />
+              <Text style={styles.heroPillText}>Prep: 12-15 min</Text>
+            </View>
+            <View style={styles.heroPill}>
+              <Ionicons name="star" size={13} color="#FF9500" />
+              <Text style={styles.heroPillText}>4.9 (1.2k+)</Text>
             </View>
           </View>
 
-          {/* Hero Bottom Overlay Title */}
-          <View style={styles.titleOverlay}>
-            <View style={styles.vegSpicyRow}>
-              <VegIndicator isVeg={isVeg} size={16} />
-              {isSpicy ? (
-                <View style={styles.spicyBadge}>
-                  <Ionicons name="flame" size={14} color="#FFFFFF" />
-                  <Text style={styles.spicyBadgeText}>Spicy</Text>
-                </View>
-              ) : null}
+          {/* Out of stock overlay */}
+          {isOutOfStock ? (
+            <View style={styles.outOfStockOverlay}>
+              <Ionicons name="alert-circle" size={32} color="#FFFFFF" />
+              <Text style={styles.outOfStockText}>Currently Brewing / Sold Out</Text>
             </View>
-            <Text style={styles.heroTitle}>{params.name}</Text>
-            <Text style={styles.heroPrice}>{formatPaise(unitPricePaise)}</Text>
-          </View>
+          ) : null}
         </View>
 
-        {/* Details & Customizations */}
-        <View style={styles.detailsBody}>
-          <Text style={styles.descriptionText}>
+        {/* Content Body */}
+        <View style={styles.body}>
+          <View style={styles.titleRow}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.vegCategoryRow}>
+                <VegIndicator isVeg={isVeg} size={16} />
+                <Text style={styles.categoryBadgeText}>
+                  {params.categoryName || 'Signature Roast'}
+                </Text>
+                {isSpicy ? <DietaryBadge type="spicy" /> : null}
+              </View>
+              <Text style={[Typography.editorialMedium, styles.titleText]}>
+                {params.name || 'Specialty Cold Brew'}
+              </Text>
+            </View>
+            <Text style={[Typography.h2, styles.priceText]}>
+              {formatPaise(basePricePaise)}
+            </Text>
+          </View>
+
+          {/* Description */}
+          <Text style={[Typography.bodyMedium, styles.descriptionText]}>
             {params.description ||
-              'Artisanal batch prepared with ethically sourced ingredients, precision temperature extraction, and signature café craft.'}
+              'Slow steeped for 18 hours using single-origin Ethiopian heirloom beans with tasting notes of bergamot, dark cocoa, and stone fruits.'}
           </Text>
 
-          {/* Highlights / Pills */}
-          <View style={styles.pillsRow}>
-            <View style={styles.pill}>
-              <Ionicons name="time-outline" size={16} color={Colors.cafeBrown} />
-              <Text style={styles.pillText}>3-5 min brew</Text>
-            </View>
-            <View style={styles.pill}>
-              <Ionicons name="flame-outline" size={16} color={Colors.cafeBrown} />
-              <Text style={styles.pillText}>~180 kcal</Text>
-            </View>
-            <View style={styles.pill}>
-              <Ionicons name="sparkles-outline" size={16} color={Colors.cafeGold} />
-              <Text style={styles.pillText}>Barista Pick</Text>
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Size Selection */}
-          <View style={styles.section}>
-            <Text style={styles.sectionHeading}>Choice of Size</Text>
-            <View style={styles.choiceRow}>
-              <TouchableOpacity
-                style={[styles.choiceCard, selectedSize === 'regular' && styles.choiceCardActive]}
-                onPress={() => setSelectedSize('regular')}
-              >
-                <Ionicons
-                  name="cafe"
-                  size={20}
-                  color={selectedSize === 'regular' ? Colors.cafeBrown : Colors.textMuted}
-                />
-                <Text
-                  style={[
-                    styles.choiceTitle,
-                    selectedSize === 'regular' && styles.choiceTitleActive,
-                  ]}
-                >
-                  Regular
-                </Text>
-                <Text style={styles.choiceSubtitle}>Standard 250ml</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.choiceCard, selectedSize === 'large' && styles.choiceCardActive]}
-                onPress={() => setSelectedSize('large')}
-              >
-                <Ionicons
-                  name="cafe"
-                  size={26}
-                  color={selectedSize === 'large' ? Colors.cafeBrown : Colors.textMuted}
-                />
-                <Text
-                  style={[
-                    styles.choiceTitle,
-                    selectedSize === 'large' && styles.choiceTitleActive,
-                  ]}
-                >
-                  Large (+₹40)
-                </Text>
-                <Text style={styles.choiceSubtitle}>Grande 380ml</Text>
-              </TouchableOpacity>
+          {/* Flavor Profile Visualizer Badges (Improvement 27) */}
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionHeader}>Flavor Profile & Sensory Notes</Text>
+            <View style={styles.flavorGrid}>
+              <View style={styles.flavorItem}>
+                <Text style={styles.flavorLabel}>Acidity</Text>
+                <Text style={styles.flavorDots}>● ● ○</Text>
+                <Text style={styles.flavorSub}>Bright Citrus</Text>
+              </View>
+              <View style={styles.flavorItem}>
+                <Text style={styles.flavorLabel}>Body</Text>
+                <Text style={styles.flavorDots}>● ● ●</Text>
+                <Text style={styles.flavorSub}>Velvety Full</Text>
+              </View>
+              <View style={styles.flavorItem}>
+                <Text style={styles.flavorLabel}>Roast Level</Text>
+                <Text style={styles.flavorDots}>● ● ○</Text>
+                <Text style={styles.flavorSub}>Medium Craft</Text>
+              </View>
             </View>
           </View>
 
-          <View style={styles.divider} />
+          {/* Dietary & Allergen Warning Callout (Improvement 28) */}
+          <View style={styles.allergenBanner}>
+            <Ionicons name="information-circle" size={18} color="#E65100" />
+            <Text style={styles.allergenText}>
+              Allergen Note: Prepared in an artisanal roastery handling organic oats, almond dairy alternatives, and hazelnuts.
+            </Text>
+          </View>
 
-          {/* Milk Options */}
-          <View style={styles.section}>
-            <Text style={styles.sectionHeading}>Milk Preference</Text>
-            <View style={styles.optionsList}>
+          {/* Size Selector */}
+          <View style={styles.customSection}>
+            <Text style={styles.sectionHeader}>Cup Size</Text>
+            <View style={styles.optionsRow}>
+              <TouchableOpacity
+                style={[
+                  styles.optionPill,
+                  selectedSize === 'regular' && styles.optionPillActive,
+                ]}
+                onPress={() => {
+                  setSelectedSize('regular');
+                  hapticFeedback.selection();
+                }}
+              >
+                <Text
+                  style={[
+                    styles.optionTitle,
+                    selectedSize === 'regular' && styles.optionTitleActive,
+                  ]}
+                >
+                  Regular (350ml)
+                </Text>
+                <Text style={styles.optionSubtitle}>Standard</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.optionPill,
+                  selectedSize === 'large' && styles.optionPillActive,
+                ]}
+                onPress={() => {
+                  setSelectedSize('large');
+                  hapticFeedback.selection();
+                }}
+              >
+                <Text
+                  style={[
+                    styles.optionTitle,
+                    selectedSize === 'large' && styles.optionTitleActive,
+                  ]}
+                >
+                  Large (475ml)
+                </Text>
+                <Text style={styles.optionSubtitle}>+₹40</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Espresso Shot Intensity Selector (Improvement 29) */}
+          <View style={styles.customSection}>
+            <Text style={styles.sectionHeader}>Espresso Shot Intensity</Text>
+            <View style={styles.optionsGrid}>
               {[
-                { id: 'standard', label: 'Whole Dairy Milk', extra: 'Included' },
-                { id: 'oat', label: 'Oat Milk (Barista Blend)', extra: '+₹30' },
-                { id: 'almond', label: 'Roasted Almond Milk', extra: '+₹35' },
-              ].map((opt) => (
+                { id: 'standard', label: 'Standard Single', sub: 'Balanced' },
+                { id: 'double', label: 'Double Shot', sub: '+₹25' },
+                { id: 'ristretto', label: 'Ristretto', sub: 'Short & Sweet' },
+                { id: 'decaf', label: 'Swiss Decaf', sub: '99% Caffeine Free' },
+              ].map((shot) => (
                 <TouchableOpacity
-                  key={opt.id}
+                  key={shot.id}
                   style={[
-                    styles.optionRow,
-                    selectedMilk === opt.id && styles.optionRowActive,
+                    styles.optionPillSmall,
+                    espressoShot === shot.id && styles.optionPillActive,
                   ]}
-                  onPress={() => setSelectedMilk(opt.id as any)}
+                  onPress={() => {
+                    setEspressoShot(shot.id as any);
+                    hapticFeedback.selection();
+                  }}
                 >
-                  <View style={styles.radioCircle}>
-                    {selectedMilk === opt.id ? <View style={styles.radioInner} /> : null}
-                  </View>
-                  <Text style={styles.optionLabel}>{opt.label}</Text>
-                  <Text style={styles.optionExtra}>{opt.extra}</Text>
+                  <Text
+                    style={[
+                      styles.optionTitleSmall,
+                      espressoShot === shot.id && styles.optionTitleActive,
+                    ]}
+                  >
+                    {shot.label}
+                  </Text>
+                  <Text style={styles.optionSubtitleSmall}>{shot.sub}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
 
-          <View style={styles.divider} />
-
-          {/* Sweetness */}
-          <View style={styles.section}>
-            <Text style={styles.sectionHeading}>Sweetness Level</Text>
-            <View style={styles.tagRow}>
+          {/* Milk Alternatives */}
+          <View style={styles.customSection}>
+            <Text style={styles.sectionHeader}>Milk Choice</Text>
+            <View style={styles.optionsRow}>
               {[
-                { id: 'regular', label: 'Standard Sweet' },
-                { id: 'less', label: '50% Less Sweet' },
-                { id: 'zero', label: 'Zero Sugar' },
+                { id: 'standard', label: 'Whole Milk', sub: 'Creamy' },
+                { id: 'oat', label: 'Oat Milk', sub: '+₹30' },
+                { id: 'almond', label: 'Almond Milk', sub: '+₹35' },
+              ].map((m) => (
+                <TouchableOpacity
+                  key={m.id}
+                  style={[
+                    styles.optionPill,
+                    selectedMilk === m.id && styles.optionPillActive,
+                  ]}
+                  onPress={() => {
+                    setSelectedMilk(m.id as any);
+                    hapticFeedback.selection();
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.optionTitle,
+                      selectedMilk === m.id && styles.optionTitleActive,
+                    ]}
+                  >
+                    {m.label}
+                  </Text>
+                  <Text style={styles.optionSubtitle}>{m.sub}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Sweetness Level */}
+          <View style={styles.customSection}>
+            <Text style={styles.sectionHeader}>Sweetness Preference</Text>
+            <View style={styles.optionsRow}>
+              {[
+                { id: 'regular', label: '100% Regular', sub: 'Classic' },
+                { id: 'less', label: '50% Less Sweet', sub: 'Subtle' },
+                { id: 'zero', label: '0% Unsweetened', sub: 'Pure' },
               ].map((s) => (
                 <TouchableOpacity
                   key={s.id}
-                  style={[styles.tag, sweetness === s.id && styles.tagActive]}
-                  onPress={() => setSweetness(s.id as any)}
+                  style={[
+                    styles.optionPill,
+                    sweetness === s.id && styles.optionPillActive,
+                  ]}
+                  onPress={() => {
+                    setSweetness(s.id as any);
+                    hapticFeedback.selection();
+                  }}
                 >
-                  <Text style={[styles.tagText, sweetness === s.id && styles.tagTextActive]}>
+                  <Text
+                    style={[
+                      styles.optionTitle,
+                      sweetness === s.id && styles.optionTitleActive,
+                    ]}
+                  >
                     {s.label}
                   </Text>
+                  <Text style={styles.optionSubtitle}>{s.sub}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
 
-          <View style={styles.divider} />
+          {/* Pastry Warmth & Pairing Suggestion (Improvement 30) */}
+          <View style={styles.pairingCard}>
+            <View style={styles.pairingLeft}>
+              <Text style={styles.pairingBadge}>BARISTA PAIRING</Text>
+              <Text style={styles.pairingTitle}>Warm Almond Croissant</Text>
+              <Text style={styles.pairingSubtitle}>
+                Flaky French laminated butter pastry with toasted almond frangipane.
+              </Text>
+            </View>
+            <Ionicons name="sparkles" size={24} color="#06C167" />
+          </View>
 
           {/* Barista Notes */}
-          <View style={styles.section}>
-            <Text style={styles.sectionHeading}>Special Preparation Request</Text>
+          <View style={styles.customSection}>
+            <Text style={styles.sectionHeader}>Special Barista Instructions</Text>
             <TextInput
-              style={styles.notesInput}
-              placeholder="e.g. Extra hot, double shot, cinnamon on top..."
+              style={styles.textInput}
+              placeholder="e.g. Extra hot, splash of vanilla, no foam..."
               placeholderTextColor={Colors.textMuted}
               value={notes}
               onChangeText={setNotes}
-              multiline
               maxLength={120}
             />
           </View>
         </View>
       </ScrollView>
 
-      {/* Floating Bottom Add-To-Cart Action Bar */}
+      {/* Sticky Bottom Add To Cart CTA Bar */}
       <View style={styles.bottomBar}>
-        <View style={styles.quantityPicker}>
+        {isOutOfStock ? (
           <TouchableOpacity
-            style={styles.qtyBtn}
-            onPress={() => setQuantity(Math.max(1, quantity - 1))}
+            style={[styles.notifyButton, notified && styles.notifyButtonDone]}
+            onPress={handleNotifyMe}
+            disabled={notified}
           >
-            <Ionicons name="remove" size={18} color={Colors.cafeBrown} />
+            <Ionicons
+              name={notified ? 'checkmark-circle' : 'notifications-outline'}
+              size={20}
+              color="#FFFFFF"
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.notifyButtonText}>
+              {notified ? 'Alert Set When Fresh' : 'Notify When Brewed'}
+            </Text>
           </TouchableOpacity>
-          <Text style={styles.qtyText}>{quantity}</Text>
-          <TouchableOpacity
-            style={styles.qtyBtn}
-            onPress={() => setQuantity(quantity + 1)}
-          >
-            <Ionicons name="add" size={18} color={Colors.cafeBrown} />
-          </TouchableOpacity>
-        </View>
+        ) : (
+          <View style={styles.ctaRow}>
+            {/* Quantity Stepper */}
+            <View style={styles.stepperContainer}>
+              <TouchableOpacity
+                style={styles.stepBtn}
+                onPress={() => {
+                  if (quantity > 1) {
+                    setQuantity((q) => q - 1);
+                    hapticFeedback.tap();
+                  }
+                }}
+              >
+                <Ionicons name="remove" size={18} color="#000000" />
+              </TouchableOpacity>
+              <Text style={styles.quantityCount}>{quantity}</Text>
+              <TouchableOpacity
+                style={styles.stepBtn}
+                onPress={() => {
+                  setQuantity((q) => q + 1);
+                  hapticFeedback.tap();
+                }}
+              >
+                <Ionicons name="add" size={18} color="#000000" />
+              </TouchableOpacity>
+            </View>
 
-        <TouchableOpacity
-          style={styles.addCta}
-          activeOpacity={0.88}
-          onPress={handleAddToCart}
-        >
-          <Text style={styles.addCtaText}>Add to Order</Text>
-          <Text style={styles.addCtaPrice}>{formatPaise(totalPricePaise)}</Text>
-        </TouchableOpacity>
+            {/* Main Add Button in Uber Green */}
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={handleAddToCart}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.addButtonText}>
+                Add to Order • {formatPaise(totalPricePaise)}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -311,242 +446,255 @@ export default function ItemDetailModal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     paddingBottom: 120,
   },
   imageHeader: {
     width: SCREEN_WIDTH,
-    height: 340,
+    height: 300,
     position: 'relative',
   },
   heroImage: {
     width: '100%',
     height: '100%',
   },
-  navBar: {
+  closeButton: {
     position: 'absolute',
-    top: 24,
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  circleButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    top: 48,
+    right: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeRow: {
+  heroBadgesRow: {
+    position: 'absolute',
+    bottom: 16,
+    left: 20,
     flexDirection: 'row',
     gap: 8,
   },
-  categoryBadge: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  heroPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
-  categoryBadgeText: {
-    color: Colors.espressoDark,
+  heroPillText: {
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+    marginLeft: 5,
   },
-  titleOverlay: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
+  outOfStockOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  vegSpicyRow: {
+  outOfStockText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  body: {
+    padding: Spacing.base,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.sm,
+  },
+  vegCategoryRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 6,
   },
-  spicyBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.error,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: Radius.full,
-    gap: 2,
-  },
-  spicyBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
+  categoryBadgeText: {
+    color: Colors.uberGreen,
     fontWeight: '700',
+    fontSize: 12,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
-  heroTitle: {
-    color: '#FFFFFF',
-    fontSize: 26,
+  titleText: {
+    color: Colors.textPrimary,
+  },
+  priceText: {
+    color: Colors.textPrimary,
     fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-  heroPrice: {
-    color: Colors.caramel,
-    fontSize: 22,
-    fontWeight: '800',
-    marginTop: 4,
-  },
-  detailsBody: {
-    padding: Spacing.xl,
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    marginTop: -20,
+    marginLeft: Spacing.md,
   },
   descriptionText: {
     color: Colors.textSecondary,
-    fontSize: 15,
     lineHeight: 22,
+    marginBottom: Spacing.lg,
   },
-  pillsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: Spacing.base,
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Colors.cafeBrownContainer,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.full,
-  },
-  pillText: {
-    fontSize: 12,
-    color: Colors.cafeBrown,
-    fontWeight: '600',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.border,
-    marginVertical: Spacing.xl,
-  },
-  section: {
-    marginBottom: Spacing.sm,
-  },
-  sectionHeading: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: Spacing.md,
-  },
-  choiceRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  choiceCard: {
-    flex: 1,
-    padding: Spacing.base,
-    borderRadius: Radius.lg,
-    borderWidth: 1.5,
+  sectionCard: {
+    backgroundColor: '#F9F9F9',
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+    borderWidth: 1,
     borderColor: Colors.border,
-    backgroundColor: Colors.background,
-    alignItems: 'center',
   },
-  choiceCardActive: {
-    borderColor: Colors.cafeBrown,
-    backgroundColor: Colors.cafeBrownContainer,
-  },
-  choiceTitle: {
+  sectionHeader: {
     fontSize: 14,
     fontWeight: '700',
     color: Colors.textPrimary,
-    marginTop: 6,
+    marginBottom: Spacing.sm,
+    letterSpacing: -0.2,
   },
-  choiceTitleActive: {
-    color: Colors.cafeBrown,
+  flavorGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  choiceSubtitle: {
+  flavorItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  flavorLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+  },
+  flavorDots: {
+    fontSize: 13,
+    color: Colors.uberGreen,
+    marginVertical: 2,
+    letterSpacing: 2,
+  },
+  flavorSub: {
+    fontSize: 11,
+    color: Colors.textMuted,
+  },
+  allergenBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    padding: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: '#FFE0B2',
+    marginBottom: Spacing.lg,
+  },
+  allergenText: {
+    color: '#E65100',
+    fontSize: 12,
+    flex: 1,
+    marginLeft: 8,
+    lineHeight: 17,
+  },
+  customSection: {
+    marginBottom: Spacing.lg,
+  },
+  optionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  optionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  optionPill: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  optionPillSmall: {
+    width: (SCREEN_WIDTH - 32 - 10) / 2,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  optionPillActive: {
+    borderColor: Colors.uberGreen,
+    backgroundColor: '#E8F8F0',
+  },
+  optionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  optionTitleSmall: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  optionTitleActive: {
+    color: Colors.uberGreenDark,
+    fontWeight: '700',
+  },
+  optionSubtitle: {
     fontSize: 11,
     color: Colors.textMuted,
     marginTop: 2,
   },
-  optionsList: {
-    gap: 10,
+  optionSubtitleSmall: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    marginTop: 2,
   },
-  optionRow: {
+  pairingCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F6FBF7',
     padding: Spacing.md,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderColor: '#C7EED6',
+    marginBottom: Spacing.lg,
   },
-  optionRowActive: {
-    borderColor: Colors.cafeBrown,
-    backgroundColor: Colors.cafeBrownContainer,
-  },
-  radioCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: Colors.cafeBrown,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.cafeBrown,
-  },
-  optionLabel: {
+  pairingLeft: {
     flex: 1,
+    marginRight: 10,
+  },
+  pairingBadge: {
+    color: Colors.uberGreen,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  pairingTitle: {
+    color: Colors.textPrimary,
     fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-  },
-  optionExtra: {
-    fontSize: 13,
     fontWeight: '700',
-    color: Colors.cafeBrown,
+    marginTop: 2,
   },
-  tagRow: {
-    flexDirection: 'row',
-    gap: 8,
+  pairingSubtitle: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    marginTop: 2,
+    lineHeight: 16,
   },
-  tag: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.background,
-  },
-  tagActive: {
-    backgroundColor: Colors.cafeBrown,
-    borderColor: Colors.cafeBrown,
-  },
-  tagText: {
-    fontSize: 13,
-    color: Colors.textPrimary,
-    fontWeight: '600',
-  },
-  tagTextActive: {
-    color: '#FFFFFF',
-  },
-  notesInput: {
-    backgroundColor: Colors.background,
+  textInput: {
+    backgroundColor: '#F9F9F9',
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: Spacing.md,
-    minHeight: 70,
-    textAlignVertical: 'top',
     fontSize: 14,
     color: Colors.textPrimary,
   },
@@ -555,58 +703,72 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: Colors.surface,
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
+    paddingBottom: 24,
+    ...Elevation.md,
+  },
+  ctaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    ...Elevation.lg,
   },
-  quantityPicker: {
+  stepperContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.background,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+    backgroundColor: '#F0F0F0',
+    borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.xs,
+    height: 48,
   },
-  qtyBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  stepBtn: {
+    width: 36,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  qtyText: {
-    paddingHorizontal: 10,
-    fontSize: 15,
+  quantityCount: {
+    fontSize: 16,
     fontWeight: '700',
-    color: Colors.textPrimary,
+    color: '#000000',
+    minWidth: 24,
+    textAlign: 'center',
   },
-  addCta: {
+  addButton: {
     flex: 1,
-    backgroundColor: Colors.cafeBrown,
-    borderRadius: Radius.full,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
+    backgroundColor: Colors.uberGreen,
+    height: 48,
+    borderRadius: Radius.sm,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    ...Elevation.md,
+    justifyContent: 'center',
+    shadowColor: Colors.uberGreen,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  addCtaText: {
+  addButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },
-  addCtaPrice: {
-    color: Colors.caramel,
-    fontSize: 16,
-    fontWeight: '800',
+  notifyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.uberBlack,
+    height: 48,
+    borderRadius: Radius.sm,
+  },
+  notifyButtonDone: {
+    backgroundColor: Colors.uberGreenDark,
+  },
+  notifyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

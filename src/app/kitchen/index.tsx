@@ -10,22 +10,23 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 import { useSocket } from '@/hooks/useSocket';
 import { CafeCard } from '@/components/common/Card';
-import { CafeButton } from '@/components/common/Button';
 import { StatusBadge } from '@/components/specific/StatusBadge';
 import { Colors } from '@/constants/colors';
-import { Radius, Spacing } from '@/constants/dimens';
+import { Radius, Spacing, Elevation } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
 import { ApiResponse } from '@/types/auth';
+import { hapticFeedback } from '@/utils/haptics';
 
 export default function KitchenScreen() {
   const queryClient = useQueryClient();
   const { socket, isConnected } = useSocket();
   const [filter, setFilter] = useState<'ACTIVE' | 'PLACED' | 'PREPARING' | 'READY'>('ACTIVE');
+  const [isCompact, setIsCompact] = useState(false);
+  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
 
   // Fetch kitchen orders
   const { data: orders, isLoading, refetch, isRefetching } = useQuery({
@@ -40,8 +41,8 @@ export default function KitchenScreen() {
   useEffect(() => {
     if (!socket) return;
 
-    const handleNewOrder = (event: any) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const handleNewOrder = () => {
+      hapticFeedback.heavy();
       queryClient.invalidateQueries({ queryKey: ['kitchen-orders'] });
     };
 
@@ -59,7 +60,7 @@ export default function KitchenScreen() {
   }, [socket, queryClient]);
 
   const handleUpdateStatus = async (orderId: string, nextStatus: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    hapticFeedback.tap();
     try {
       await apiClient.patch(`/orders/${orderId}/status`, {
         status: nextStatus,
@@ -70,6 +71,40 @@ export default function KitchenScreen() {
     }
   };
 
+  const toggleItemCheck = (key: string) => {
+    hapticFeedback.selection();
+    setCheckedItems((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const getUrgencyConfig = (createdAt: string) => {
+    const elapsedMinutes = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
+    if (elapsedMinutes > 15) {
+      return {
+        bg: '#FFEBEE',
+        borderColor: '#E11900',
+        badge: `${elapsedMinutes}m (RUSH)`,
+        badgeColor: '#E11900',
+      };
+    }
+    if (elapsedMinutes > 7) {
+      return {
+        bg: '#FFF8E1',
+        borderColor: '#F57F17',
+        badge: `${elapsedMinutes}m ago`,
+        badgeColor: '#F57F17',
+      };
+    }
+    return {
+      bg: '#E8F8F0',
+      borderColor: '#06C167',
+      badge: `${elapsedMinutes}m ago (Fresh)`,
+      badgeColor: '#05944F',
+    };
+  };
+
   const filteredOrders = (orders || []).filter((order) => {
     if (filter === 'ACTIVE') return order.status !== 'SERVED' && order.status !== 'CANCELLED';
     return order.status === filter;
@@ -77,7 +112,7 @@ export default function KitchenScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header with Socket Connection Indicator */}
+      {/* Header with Socket Connection Indicator & Density Toggle */}
       <View style={styles.headerBar}>
         <View style={styles.socketIndicator}>
           <View
@@ -91,19 +126,40 @@ export default function KitchenScreen() {
           </Text>
         </View>
 
-        <View style={styles.filterTabs}>
-          {(['ACTIVE', 'PLACED', 'PREPARING', 'READY'] as const).map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tabChip, filter === tab && styles.tabChipActive]}
-              onPress={() => setFilter(tab)}
+        {/* Compact Density Toggle (Improvement 54) */}
+        <TouchableOpacity
+          style={styles.densityBtn}
+          onPress={() => {
+            setIsCompact(!isCompact);
+            hapticFeedback.tap();
+          }}
+        >
+          <Ionicons name={isCompact ? 'grid' : 'list'} size={18} color={Colors.uberGreen} />
+          <Text style={styles.densityBtnText}>{isCompact ? 'Compact' : 'Detailed'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Filter Tabs */}
+      <View style={styles.filterTabsRow}>
+        {(['ACTIVE', 'PLACED', 'PREPARING', 'READY'] as const).map((tab) => (
+          <TouchableOpacity
+            key={tab}
+            style={[styles.tabChip, filter === tab && styles.tabChipActive]}
+            onPress={() => {
+              setFilter(tab);
+              hapticFeedback.selection();
+            }}
+          >
+            <Text
+              style={[
+                styles.tabChipText,
+                filter === tab && styles.tabChipTextActive,
+              ]}
             >
-              <Text style={[styles.tabChipText, filter === tab && styles.tabChipTextActive]}>
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+              {tab}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       <ScrollView
@@ -111,91 +167,123 @@ export default function KitchenScreen() {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} />}
       >
         {isLoading ? (
-          <ActivityIndicator size="large" color={Colors.cafeBrown} style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color={Colors.uberGreen} style={{ marginTop: 40 }} />
         ) : filteredOrders.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="checkmark-done-circle-outline" size={64} color={Colors.textMuted} />
-            <Text style={[Typography.h3, { color: Colors.textMuted, marginTop: Spacing.md }]}>
-              All clear! No active tickets
+            <Ionicons name="fast-food-outline" size={56} color={Colors.textMuted} />
+            <Text style={[Typography.bodyMedium, { color: Colors.textMuted, marginTop: Spacing.md }]}>
+              No incoming orders in this queue. Kitchen is all clear!
             </Text>
           </View>
         ) : (
-          filteredOrders.map((order) => {
-            const timeAgo = new Date(order.createdAt).toLocaleTimeString('en-IN', {
-              hour: '2-digit',
-              minute: '2-digit',
-            });
+          <View style={isCompact ? styles.compactGrid : styles.detailedList}>
+            {filteredOrders.map((order) => {
+              const urgency = getUrgencyConfig(order.createdAt);
+              const itemsList = order.items || [];
 
-            return (
-              <CafeCard key={order.id} variant="elevated" style={styles.ticketCard}>
-                <View style={styles.ticketHeader}>
-                  <View>
-                    <Text style={[Typography.h3, { color: Colors.cafeBrown }]}>
-                      Order #{order.orderNumber}
-                    </Text>
-                    <Text style={[Typography.bodyMedium, { color: Colors.textPrimary, fontWeight: '700' }]}>
-                      {order.table ? `Table ${order.table.tableNumber}` : 'Takeaway'} • {timeAgo}
-                    </Text>
-                  </View>
-                  <StatusBadge status={order.status} />
-                </View>
-
-                {/* Items Ticket */}
-                <View style={styles.itemsTicket}>
-                  {order.items?.map((item: any) => (
-                    <View key={item.id} style={styles.itemRow}>
-                      <Text style={[Typography.titleMedium, { color: Colors.textPrimary }]}>
-                        {item.quantity} × {item.menuItem?.name || 'Item'}
+              return (
+                <View
+                  key={order.id}
+                  style={[
+                    styles.ticketCard,
+                    { borderColor: urgency.borderColor, backgroundColor: '#FFFFFF' },
+                    isCompact ? styles.ticketCardCompact : styles.ticketCardDetailed,
+                  ]}
+                >
+                  {/* Top Bar with Urgency Color Tag (Improvement 51) */}
+                  <View style={[styles.ticketHeader, { backgroundColor: urgency.bg }]}>
+                    <View style={styles.ticketHeaderLeft}>
+                      <Text style={styles.orderNumberText}>Order #{order.orderNumber}</Text>
+                      <Text style={styles.tableBadgeText}>
+                        Table {order.table?.tableNumber || 1}
                       </Text>
-                      {item.notes ? (
-                        <Text style={[Typography.bodySmall, { color: Colors.error, fontStyle: 'italic' }]}>
-                          Note: {item.notes}
-                        </Text>
-                      ) : null}
                     </View>
-                  ))}
-                </View>
-
-                {order.specialInstructions ? (
-                  <View style={styles.instructionsBox}>
-                    <Text style={[Typography.bodySmall, { color: Colors.cafeBrownDark, fontWeight: '700' }]}>
-                      Special Request: {order.specialInstructions}
-                    </Text>
+                    <View style={[styles.urgencyBadge, { borderColor: urgency.badgeColor }]}>
+                      <Text style={[styles.urgencyBadgeText, { color: urgency.badgeColor }]}>
+                        {urgency.badge}
+                      </Text>
+                    </View>
                   </View>
-                ) : null}
 
-                {/* Kitchen Action Buttons */}
-                <View style={styles.actionRow}>
-                  {order.status === 'PLACED' ? (
-                    <CafeButton
-                      title="Start Preparing"
-                      size="sm"
-                      onPress={() => handleUpdateStatus(order.id, 'PREPARING')}
-                      style={{ flex: 1 }}
-                    />
-                  ) : null}
+                  {/* Checklist of Items (Improvement 53) */}
+                  <View style={styles.ticketBody}>
+                    {itemsList.map((item: any, idx: number) => {
+                      const itemKey = `${order.id}-${idx}`;
+                      const isChecked = !!checkedItems[itemKey];
 
-                  {order.status === 'PREPARING' ? (
-                    <CafeButton
-                      title="Mark as Ready"
-                      size="sm"
-                      onPress={() => handleUpdateStatus(order.id, 'READY')}
-                      style={{ flex: 1, backgroundColor: Colors.warning }}
-                    />
-                  ) : null}
+                      return (
+                        <TouchableOpacity
+                          key={itemKey}
+                          style={styles.checkItemRow}
+                          onPress={() => toggleItemCheck(itemKey)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons
+                            name={isChecked ? 'checkbox' : 'square-outline'}
+                            size={18}
+                            color={isChecked ? Colors.uberGreen : Colors.textMuted}
+                            style={{ marginRight: 8 }}
+                          />
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={[
+                                styles.checkItemText,
+                                isChecked && styles.checkItemTextStrikethrough,
+                              ]}
+                            >
+                              <Text style={styles.itemQty}>{item.quantity}x </Text>
+                              {item.menuItem?.name || item.name || 'Barista Item'}
+                            </Text>
+                            {item.notes ? (
+                              <Text style={styles.checkItemNotes}>• {item.notes}</Text>
+                            ) : null}
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
 
-                  {order.status === 'READY' ? (
-                    <CafeButton
-                      title="Mark as Served"
-                      size="sm"
-                      onPress={() => handleUpdateStatus(order.id, 'SERVED')}
-                      style={{ flex: 1, backgroundColor: Colors.success }}
-                    />
-                  ) : null}
+                    {order.specialInstructions ? (
+                      <View style={styles.instructionsBox}>
+                        <Text style={styles.instructionsText}>
+                          ⚠️ Note: {order.specialInstructions}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+
+                  {/* Action Buttons: Status Transitions */}
+                  <View style={styles.ticketActions}>
+                    {order.status === 'PLACED' ? (
+                      <TouchableOpacity
+                        style={[styles.actionBtn, { backgroundColor: '#FF9500' }]}
+                        onPress={() => handleUpdateStatus(order.id, 'PREPARING')}
+                      >
+                        <Text style={styles.actionBtnText}>Start Brewing</Text>
+                      </TouchableOpacity>
+                    ) : null}
+
+                    {order.status === 'PREPARING' ? (
+                      <TouchableOpacity
+                        style={[styles.actionBtn, { backgroundColor: Colors.uberGreen }]}
+                        onPress={() => handleUpdateStatus(order.id, 'READY')}
+                      >
+                        <Text style={styles.actionBtnText}>Mark Ready</Text>
+                      </TouchableOpacity>
+                    ) : null}
+
+                    {order.status === 'READY' ? (
+                      <TouchableOpacity
+                        style={[styles.actionBtn, { backgroundColor: Colors.uberBlack }]}
+                        onPress={() => handleUpdateStatus(order.id, 'SERVED')}
+                      >
+                        <Text style={styles.actionBtnText}>Mark Served</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
                 </View>
-              </CafeCard>
-            );
-          })
+              );
+            })}
+          </View>
         )}
       </ScrollView>
     </View>
@@ -205,44 +293,61 @@ export default function KitchenScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F5F5F7',
   },
   headerBar: {
-    backgroundColor: Colors.surface,
-    padding: Spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.base,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xs,
+    backgroundColor: '#FFFFFF',
   },
   socketIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
   },
   socketDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
   },
-  filterTabs: {
+  densityBtn: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#E8F8F0',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radius.sm,
+  },
+  densityBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.uberGreenDark,
+    marginLeft: 4,
+  },
+  filterTabsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    gap: 8,
   },
   tabChip: {
-    flex: 1,
-    alignItems: 'center',
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: Colors.background,
-    borderRadius: Radius.md,
-    marginHorizontal: 3,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderRadius: Radius.full,
+    backgroundColor: '#F0F0F0',
   },
   tabChipActive: {
-    backgroundColor: Colors.cafeBrown,
-    borderColor: Colors.cafeBrown,
+    backgroundColor: Colors.uberGreen,
   },
   tabChipText: {
-    ...Typography.labelSmall,
+    fontSize: 12,
+    fontWeight: '700',
     color: Colors.textSecondary,
   },
   tabChipTextActive: {
@@ -254,37 +359,118 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 80,
+    marginTop: 80,
+  },
+  detailedList: {
+    gap: 16,
+  },
+  compactGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
   },
   ticketCard: {
-    marginBottom: Spacing.base,
-    backgroundColor: '#FFFFFF',
-    borderLeftWidth: 4,
-    borderLeftColor: Colors.cafeBrown,
+    borderRadius: Radius.md,
+    borderWidth: 2,
+    overflow: 'hidden',
+    ...Elevation.sm,
+  },
+  ticketCardDetailed: {
+    width: '100%',
+  },
+  ticketCardCompact: {
+    width: '48%',
   },
   ticketHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingBottom: Spacing.sm,
+    alignItems: 'center',
+    padding: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  itemsTicket: {
-    paddingVertical: Spacing.sm,
+  ticketHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  itemRow: {
+  orderNumberText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+  },
+  tableBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.uberGreenDark,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  urgencyBadge: {
+    borderWidth: 1,
+    borderRadius: Radius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: '#FFFFFF',
+  },
+  urgencyBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  ticketBody: {
+    padding: Spacing.sm,
+  },
+  checkItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     paddingVertical: 4,
   },
-  instructionsBox: {
-    backgroundColor: Colors.cafeBrownContainer,
-    padding: Spacing.sm,
-    borderRadius: Radius.sm,
-    marginBottom: Spacing.sm,
+  checkItemText: {
+    fontSize: 14,
+    color: Colors.textPrimary,
+    fontWeight: '500',
   },
-  actionRow: {
-    flexDirection: 'row',
-    marginTop: Spacing.xs,
+  checkItemTextStrikethrough: {
+    textDecorationLine: 'line-through',
+    color: Colors.textMuted,
+  },
+  itemQty: {
+    fontWeight: '800',
+    color: Colors.textPrimary,
+  },
+  checkItemNotes: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    fontStyle: 'italic',
+    marginTop: 1,
+  },
+  instructionsBox: {
+    backgroundColor: '#FFF3E0',
+    padding: 6,
+    borderRadius: Radius.xs,
+    marginTop: 6,
+  },
+  instructionsText: {
+    fontSize: 12,
+    color: '#E65100',
+    fontWeight: '600',
+  },
+  ticketActions: {
+    padding: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  actionBtn: {
+    paddingVertical: 10,
+    borderRadius: Radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

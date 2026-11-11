@@ -6,7 +6,7 @@ export const Colors = {
   uberGreenContainer: '#E8F8F0',
   uberGreenBorder: 'rgba(6, 193, 103, 0.25)',
 
-  // High Contrast Neutrals & Surfaces
+  // High Contrast Neutrals & Surfaces (Light Mode)
   uberBlack: '#000000',
   uberDark: '#121212',
   uberDarkElevated: '#1F1F1F',
@@ -17,6 +17,14 @@ export const Colors = {
   background: '#F6F6F6',
   surface: '#FFFFFF',
   surfaceVariant: '#F0F0F0',
+
+  // Warm Organic Dark Mode Palette (Espresso, Cocoa & Oat)
+  darkBackground: '#141210',
+  darkSurface: '#1E1B18',
+  darkSurfaceElevated: '#282420',
+  darkBorder: '#36302B',
+  darkOatText: '#ECE0D6',
+  darkOatMuted: '#A89E96',
 
   // Typography
   textPrimary: '#000000',
@@ -41,7 +49,7 @@ export const Colors = {
   glassBorder: 'rgba(255, 255, 255, 0.8)',
   darkOverlay: 'rgba(0, 0, 0, 0.65)',
 
-  // Backward-Compatible Semantic Aliases (seamless migration from brown to Uber Eats green)
+  // Backward-Compatible Semantic Aliases
   cafeBrown: '#06C167',
   cafeBrownDark: '#05944F',
   cafeBrownLight: '#10B981',

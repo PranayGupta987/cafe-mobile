@@ -25,6 +25,38 @@ import { formatPaise } from '@/utils/currency';
 import { ApiResponse } from '@/types/auth';
 import { ConfettiHost } from '@/components/feedback/Confetti';
 import { MediaAssets } from '@/constants/media';
+import { hapticFeedback } from '@/utils/haptics';
+
+const TIP_OPTIONS = [
+  { label: 'No Tip', amountPaise: 0 },
+  { label: '₹20 (Coffee Bean)', amountPaise: 2000 },
+  { label: '₹40 (Barista Love)', amountPaise: 4000 },
+  { label: '₹60 (Master Brewer)', amountPaise: 6000 },
+];
+
+const UPSELL_ITEMS = [
+  {
+    id: 'upsell-1',
+    name: 'Warm Almond Croissant',
+    pricePaise: 18000,
+    isVeg: true,
+    image: MediaAssets.heroes.bakeryDisplay,
+  },
+  {
+    id: 'upsell-2',
+    name: 'Vanilla Sweet Cream Foam',
+    pricePaise: 6000,
+    isVeg: true,
+    image: MediaAssets.heroes.latteArt,
+  },
+  {
+    id: 'upsell-3',
+    name: 'Sparkling Mineral Water',
+    pricePaise: 8000,
+    isVeg: true,
+    image: MediaAssets.heroes.coldBrew,
+  },
+];
 
 export default function CartModal() {
   const router = useRouter();
@@ -34,6 +66,7 @@ export default function CartModal() {
     tableNumber,
     appliedOffer,
     specialInstructions,
+    addItem,
     incrementItem,
     decrementItem,
     removeItem,
@@ -48,6 +81,8 @@ export default function CartModal() {
     getTotalPaise,
   } = useCartStore();
 
+  const [fulfillmentMode, setFulfillmentMode] = useState<'DINE_IN' | 'TAKEAWAY'>('DINE_IN');
+  const [selectedTipPaise, setSelectedTipPaise] = useState(0);
   const [promoInput, setPromoInput] = useState('');
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
@@ -57,7 +92,26 @@ export default function CartModal() {
   const discount = getDiscountPaise();
   const subtotalAfterDiscount = getSubtotalAfterDiscountPaise();
   const gst = getGstPaise();
-  const total = getTotalPaise();
+  const grandTotal = getTotalPaise() + selectedTipPaise;
+
+  const handleClearCartPrompt = () => {
+    hapticFeedback.warning();
+    Alert.alert(
+      'Clear Basket?',
+      'Are you sure you want to remove all items from your order?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: () => {
+            clearCart();
+            hapticFeedback.tap();
+          },
+        },
+      ]
+    );
+  };
 
   const handleApplyPromo = async () => {
     const code = promoInput.trim().toUpperCase();
@@ -67,18 +121,22 @@ export default function CartModal() {
     }
 
     setIsApplyingPromo(true);
+    hapticFeedback.tap();
+
     try {
       const res = await apiClient.get<ApiResponse<any[]>>('/offers');
       const offers = res.data.data || [];
       const matched = offers.find((o) => o.code.toUpperCase() === code);
 
       if (!matched) {
+        hapticFeedback.error();
         Alert.alert('Invalid Code', `Promo code "${code}" is invalid or expired.`);
         setIsApplyingPromo(false);
         return;
       }
 
       if (subtotal < matched.minOrderAmountPaise) {
+        hapticFeedback.warning();
         Alert.alert(
           'Minimum Order Required',
           `Minimum order of ${formatPaise(matched.minOrderAmountPaise)} required for this offer.`
@@ -106,42 +164,60 @@ export default function CartModal() {
         discountPaise: Math.round(discountPaise),
       });
 
+      hapticFeedback.success();
       setPromoInput('');
-      Alert.alert('Success', `Coupon ${matched.code} applied!`);
+      Alert.alert('Success 🎉', `Coupon ${matched.code} applied!`);
     } catch (e: any) {
+      hapticFeedback.error();
       Alert.alert('Error', 'Failed to validate promo code');
     } finally {
       setIsApplyingPromo(false);
     }
   };
 
+  const handleAddUpsell = (upsell: (typeof UPSELL_ITEMS)[0]) => {
+    hapticFeedback.tap();
+    addItem({
+      menuItemId: upsell.id,
+      name: upsell.name,
+      pricePaise: upsell.pricePaise,
+      isVeg: upsell.isVeg,
+      imageUrl: upsell.image,
+    });
+  };
+
   const handlePlaceOrder = async () => {
     if (items.length === 0) return;
 
     setIsPlacingOrder(true);
+    hapticFeedback.heavy();
+
     try {
       const payload = {
-        tableId: tableId || undefined,
-        tableNumber: tableNumber || 1,
+        tableId: fulfillmentMode === 'DINE_IN' ? tableId || undefined : undefined,
+        tableNumber: fulfillmentMode === 'DINE_IN' ? tableNumber || 1 : 0,
         items: items.map((i) => ({
           menuItemId: i.menuItemId,
           quantity: i.quantity,
           notes: i.notes || undefined,
         })),
         offerCode: appliedOffer?.code || undefined,
-        specialInstructions: specialInstructions.trim() || undefined,
+        specialInstructions: `[${fulfillmentMode}] ${specialInstructions.trim()}`.trim() || undefined,
       };
 
       const res = await apiClient.post<ApiResponse<any>>('/orders', payload);
       const orderData = res.data.data;
 
       if (res.data.success && orderData) {
+        hapticFeedback.success();
         setPlacedOrderNumber(orderData.orderNumber);
         clearCart();
       } else {
+        hapticFeedback.error();
         Alert.alert('Order Failed', res.data.message || 'Could not place order');
       }
     } catch (err: any) {
+      hapticFeedback.error();
       const msg = err.response?.data?.error?.message || err.message || 'Failed to place order';
       Alert.alert('Order Failed', msg);
     } finally {
@@ -154,19 +230,19 @@ export default function CartModal() {
       <View style={styles.successContainer}>
         <ConfettiHost visible={true} />
         <View style={styles.successIconCircle}>
-          <Ionicons name="checkmark" size={64} color={Colors.success} />
+          <Ionicons name="checkmark" size={64} color="#FFFFFF" />
         </View>
-        <Text style={[Typography.h1, { color: Colors.textPrimary, textAlign: 'center' }]}>
-          Order Successfully Placed!
+        <Text style={[Typography.editorialLarge, { color: Colors.textPrimary, textAlign: 'center' }]}>
+          Order Confirmed!
         </Text>
-        <Text style={[Typography.h2, { color: Colors.cafeBrown, marginTop: Spacing.sm }]}>
+        <Text style={[Typography.h2, { color: Colors.uberGreenDark, marginTop: Spacing.sm }]}>
           Order #{placedOrderNumber}
         </Text>
         <Text style={[Typography.bodyMedium, styles.successSubtitle]}>
-          Your artisanal order has been dispatched to the barista and will be served to Table {tableNumber || 1} shortly.
+          Your order is being handcrafted with precision. Follow live brewing status on your Orders tab.
         </Text>
         <CafeButton
-          title="View My Orders"
+          title="Track Live Order"
           onPress={() => {
             router.replace('/(tabs)/orders');
           }}
@@ -180,16 +256,16 @@ export default function CartModal() {
     return (
       <View style={styles.emptyContainer}>
         <View style={styles.emptyIconCircle}>
-          <Ionicons name="cart-outline" size={48} color={Colors.cafeBrown} />
+          <Ionicons name="cart-outline" size={48} color={Colors.uberGreen} />
         </View>
-        <Text style={[Typography.h3, { marginTop: Spacing.base, color: Colors.textPrimary }]}>
-          Your basket is empty
+        <Text style={[Typography.editorialMedium, { marginTop: Spacing.base, color: Colors.textPrimary }]}>
+          Your Basket is Empty
         </Text>
         <Text style={[Typography.bodyMedium, { color: Colors.textMuted, marginTop: Spacing.xs, textAlign: 'center', maxWidth: 260 }]}>
-          Explore our seasonal pour-overs, fresh sourdough, and chef specialties
+          Explore specialty pour-overs, cold brews, and fresh artisan pastries
         </Text>
         <CafeButton
-          title="Explore Menu"
+          title="Browse Menu"
           onPress={() => router.replace('/(tabs)/menu')}
           style={{ marginTop: Spacing.xl, minWidth: 200 }}
         />
@@ -199,33 +275,78 @@ export default function CartModal() {
 
   return (
     <View style={styles.container}>
+      {/* Top Header with Clear Cart Action (Improvement 38) */}
+      <View style={styles.topHeaderBar}>
+        <Text style={[Typography.h3, { color: Colors.textPrimary }]}>Your Basket</Text>
+        <TouchableOpacity onPress={handleClearCartPrompt} style={styles.clearBtn}>
+          <Ionicons name="trash-outline" size={18} color={Colors.error} />
+          <Text style={styles.clearBtnText}>Clear</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Table Assignment Info */}
-        <View style={styles.tableInfoCard}>
-          <View style={styles.tableInfoRow}>
-            <View style={styles.tableBadge}>
-              <Ionicons name="cafe" size={16} color="#FFFFFF" />
-            </View>
-            <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-              <Text style={styles.tableDineText}>
-                {tableNumber ? `Dine-In • Table ${tableNumber}` : 'Dine-In • Table 1 (Barista Counter)'}
-              </Text>
-              <Text style={styles.tableHintText}>Served directly to your table</Text>
-            </View>
-            <TouchableOpacity onPress={() => router.push('/modal/qr-scanner')}>
-              <Text style={styles.changeTableText}>Change</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Fulfillment Mode Segmented Toggle (Improvement 37) */}
+        <View style={styles.fulfillmentToggleContainer}>
+          <TouchableOpacity
+            style={[
+              styles.fulfillmentTab,
+              fulfillmentMode === 'DINE_IN' && styles.fulfillmentTabActive,
+            ]}
+            onPress={() => {
+              setFulfillmentMode('DINE_IN');
+              hapticFeedback.selection();
+            }}
+          >
+            <Ionicons
+              name="restaurant-outline"
+              size={16}
+              color={fulfillmentMode === 'DINE_IN' ? '#FFFFFF' : Colors.textSecondary}
+            />
+            <Text
+              style={[
+                styles.fulfillmentTabText,
+                fulfillmentMode === 'DINE_IN' && styles.fulfillmentTabTextActive,
+              ]}
+            >
+              Dine-In • Table {tableNumber || 1}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.fulfillmentTab,
+              fulfillmentMode === 'TAKEAWAY' && styles.fulfillmentTabActive,
+            ]}
+            onPress={() => {
+              setFulfillmentMode('TAKEAWAY');
+              hapticFeedback.selection();
+            }}
+          >
+            <Ionicons
+              name="bag-handle-outline"
+              size={16}
+              color={fulfillmentMode === 'TAKEAWAY' ? '#FFFFFF' : Colors.textSecondary}
+            />
+            <Text
+              style={[
+                styles.fulfillmentTabText,
+                fulfillmentMode === 'TAKEAWAY' && styles.fulfillmentTabTextActive,
+              ]}
+            >
+              Takeaway / Counter
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Items List */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Order Items ({items.reduce((s, i) => s + i.quantity, 0)})</Text>
+          <Text style={styles.sectionTitle}>
+            Selected Items ({items.reduce((s, i) => s + i.quantity, 0)})
+          </Text>
           {items.map((item) => {
             const img = item.imageUrl || MediaAssets.fallbackByKeyword(item.name);
             return (
               <View key={item.menuItemId} style={styles.cartItemRow}>
-                {/* Food Thumbnail */}
                 <Image
                   source={{ uri: img }}
                   style={styles.itemThumb}
@@ -261,18 +382,67 @@ export default function CartModal() {
           })}
         </View>
 
-        {/* Promo Code Input */}
+        {/* Cross-Sell Upsell Drawer (Improvement 35) */}
+        <View style={styles.upsellSection}>
+          <Text style={styles.upsellSectionTitle}>Frequently Paired Delights</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.upsellScroll}>
+            {UPSELL_ITEMS.map((upsell) => (
+              <View key={upsell.id} style={styles.upsellCard}>
+                <Image source={{ uri: upsell.image }} style={styles.upsellImage} contentFit="cover" />
+                <Text style={styles.upsellName} numberOfLines={1}>{upsell.name}</Text>
+                <Text style={styles.upsellPrice}>{formatPaise(upsell.pricePaise)}</Text>
+                <TouchableOpacity
+                  style={styles.upsellAddBtn}
+                  onPress={() => handleAddUpsell(upsell)}
+                >
+                  <Ionicons name="add" size={14} color={Colors.uberGreen} />
+                  <Text style={styles.upsellAddText}>Add</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* One-Tap Tip Selector (Improvement 33) */}
+        <CafeCard variant="elevated" style={styles.tipCard}>
+          <View style={styles.tipHeader}>
+            <Ionicons name="heart" size={18} color="#E11900" />
+            <Text style={[styles.tipTitle, { marginLeft: 6 }]}>Show Barista Appreciation</Text>
+          </View>
+          <Text style={styles.tipSubtitle}>100% of tips go directly to the team behind the counter</Text>
+          <View style={styles.tipOptionsRow}>
+            {TIP_OPTIONS.map((tip) => {
+              const active = selectedTipPaise === tip.amountPaise;
+              return (
+                <TouchableOpacity
+                  key={tip.amountPaise}
+                  style={[styles.tipChip, active && styles.tipChipActive]}
+                  onPress={() => {
+                    setSelectedTipPaise(tip.amountPaise);
+                    hapticFeedback.tap();
+                  }}
+                >
+                  <Text style={[styles.tipChipText, active && styles.tipChipTextActive]}>
+                    {tip.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </CafeCard>
+
+        {/* Promo Voucher Card with Checkmark (Improvement 36) */}
         <CafeCard variant="elevated" style={styles.promoCard}>
           <Text style={[Typography.labelMedium, { marginBottom: Spacing.sm, color: Colors.textSecondary }]}>
-            Have a voucher or coupon?
+            Apply Voucher or Promo Code
           </Text>
           {appliedOffer ? (
             <View style={styles.appliedPromoRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Ionicons name="pricetag" size={20} color={Colors.success} />
+                <Ionicons name="checkmark-circle" size={24} color={Colors.uberGreen} />
                 <View>
-                  <Text style={[Typography.labelLarge, { color: Colors.success }]}>
-                    {appliedOffer.code} Applied
+                  <Text style={[Typography.labelLarge, { color: Colors.uberGreenDark }]}>
+                    {appliedOffer.code} Applied!
                   </Text>
                   <Text style={[Typography.bodySmall, { color: Colors.textSecondary }]}>
                     {appliedOffer.title} (-{formatPaise(appliedOffer.discountPaise)})
@@ -304,62 +474,64 @@ export default function CartModal() {
           )}
         </CafeCard>
 
-        {/* Special Instructions */}
-        <CafeCard variant="elevated" style={styles.instructionsCard}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.sm }}>
-            <Ionicons name="chatbubble-ellipses-outline" size={16} color={Colors.cafeBrown} />
-            <Text style={[Typography.labelMedium, { color: Colors.textPrimary }]}>
-              Notes for the Barista / Kitchen
-            </Text>
-          </View>
-          <TextInput
-            style={styles.instructionsInput}
-            placeholder="e.g. Extra hot, oat milk preferred, sauce on the side..."
-            placeholderTextColor={Colors.textMuted}
-            value={specialInstructions}
-            onChangeText={setSpecialInstructions}
-            multiline
-            numberOfLines={2}
-          />
-        </CafeCard>
-
-        {/* Bill Breakdown */}
-        <CafeCard variant="elevated" style={styles.billCard}>
-          <Text style={[Typography.h3, { marginBottom: Spacing.md }]}>Bill Summary</Text>
-
-          <View style={styles.billRow}>
-            <Text style={[Typography.bodyMedium, { color: Colors.textSecondary }]}>Item Subtotal</Text>
-            <Text style={Typography.bodyMedium}>{formatPaise(subtotal)}</Text>
-          </View>
-
-          {discount > 0 ? (
-            <View style={styles.billRow}>
-              <Text style={[Typography.bodyMedium, { color: Colors.success }]}>Promo Savings</Text>
-              <Text style={[Typography.bodyMedium, { color: Colors.success, fontWeight: '700' }]}>
-                -{formatPaise(discount)}
-              </Text>
+        {/* Perforated Receipt Styling (Improvement 32) */}
+        <View style={styles.receiptContainer}>
+          <View style={styles.receiptInner}>
+            <View style={styles.receiptHeader}>
+              <Text style={styles.receiptTitle}>RECEIPT BREAKDOWN</Text>
+              <Text style={styles.receiptId}>GST Reg: 29AAAAA0000A1Z5</Text>
             </View>
-          ) : null}
 
-          <View style={styles.billRow}>
-            <Text style={[Typography.bodyMedium, { color: Colors.textSecondary }]}>GST (5%)</Text>
-            <Text style={Typography.bodyMedium}>{formatPaise(gst)}</Text>
+            <View style={styles.receiptDivider} />
+
+            <View style={styles.billRow}>
+              <Text style={styles.receiptLabel}>Item Subtotal</Text>
+              <Text style={styles.receiptValue}>{formatPaise(subtotal)}</Text>
+            </View>
+
+            {discount > 0 ? (
+              <View style={styles.billRow}>
+                <Text style={[styles.receiptLabel, { color: Colors.uberGreenDark }]}>Coupon Discount</Text>
+                <Text style={[styles.receiptValue, { color: Colors.uberGreenDark, fontWeight: '700' }]}>
+                  -{formatPaise(discount)}
+                </Text>
+              </View>
+            ) : null}
+
+            <View style={styles.billRow}>
+              <Text style={styles.receiptLabel}>Restaurant GST (5%)</Text>
+              <Text style={styles.receiptValue}>{formatPaise(gst)}</Text>
+            </View>
+
+            {selectedTipPaise > 0 ? (
+              <View style={styles.billRow}>
+                <Text style={styles.receiptLabel}>Barista Tip</Text>
+                <Text style={styles.receiptValue}>{formatPaise(selectedTipPaise)}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.receiptDividerThick} />
+
+            <View style={[styles.billRow, { marginTop: 6 }]}>
+              <Text style={styles.receiptTotalLabel}>Grand Total</Text>
+              <Text style={styles.receiptTotalValue}>{formatPaise(grandTotal)}</Text>
+            </View>
           </View>
 
-          <View style={[styles.billRow, styles.totalBillRow]}>
-            <Text style={[Typography.titleMedium, { fontWeight: '800' }]}>To Pay</Text>
-            <Text style={[Typography.h2, { color: Colors.cafeBrown, fontWeight: '800' }]}>
-              {formatPaise(total)}
-            </Text>
+          {/* Serrated Cutout Edge at bottom */}
+          <View style={styles.serratedRow}>
+            {Array.from({ length: 18 }).map((_, i) => (
+              <View key={i} style={styles.serratedTooth} />
+            ))}
           </View>
-        </CafeCard>
+        </View>
       </ScrollView>
 
       {/* Checkout Footer */}
       <View style={styles.footer}>
         <View style={styles.footerSummary}>
-          <Text style={styles.footerItemCount}>{items.reduce((s, i) => s + i.quantity, 0)} Items</Text>
-          <Text style={styles.footerTotal}>{formatPaise(total)}</Text>
+          <Text style={styles.footerItemCount}>{items.reduce((s, i) => s + i.quantity, 0)} Items • {fulfillmentMode}</Text>
+          <Text style={styles.footerTotal}>{formatPaise(grandTotal)}</Text>
         </View>
         <CafeButton
           title="Place Order"
@@ -376,59 +548,68 @@ export default function CartModal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F6F6F6',
+  },
+  topHeaderBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.base,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xs,
+    backgroundColor: '#FFFFFF',
+  },
+  clearBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  clearBtnText: {
+    fontSize: 13,
+    color: Colors.error,
+    fontWeight: '700',
   },
   scrollContent: {
     padding: Spacing.base,
-    paddingBottom: 110,
+    paddingBottom: 120,
   },
-  tableInfoCard: {
+  fulfillmentToggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#EBEBEB',
+    borderRadius: Radius.full,
+    padding: 4,
     marginBottom: Spacing.base,
-    backgroundColor: '#FFFFFF',
-    borderRadius: Radius.lg,
-    padding: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Elevation.sm,
   },
-  tableInfoRow: {
+  fulfillmentTab: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  tableBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.cafeBrown,
-    alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: Radius.full,
+    gap: 6,
   },
-  tableDineText: {
-    fontSize: 14,
+  fulfillmentTabActive: {
+    backgroundColor: Colors.uberBlack,
+  },
+  fulfillmentTabText: {
+    fontSize: 12,
     fontWeight: '700',
-    color: Colors.textPrimary,
+    color: Colors.textSecondary,
   },
-  tableHintText: {
-    fontSize: 11,
-    color: Colors.textMuted,
-  },
-  changeTableText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.cafeBrown,
+  fulfillmentTabTextActive: {
+    color: '#FFFFFF',
   },
   sectionContainer: {
-    backgroundColor: Colors.surface,
+    backgroundColor: '#FFFFFF',
     borderRadius: Radius.lg,
     padding: Spacing.base,
     marginBottom: Spacing.base,
-    borderWidth: 1,
-    borderColor: Colors.border,
     ...Elevation.sm,
   },
   sectionTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
     marginBottom: Spacing.sm,
   },
@@ -437,13 +618,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: '#F0F0F0',
   },
   itemThumb: {
     width: 48,
     height: 48,
     borderRadius: Radius.sm,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F0F0F0',
   },
   cartItemDetails: {
     flex: 1,
@@ -457,15 +638,110 @@ const styles = StyleSheet.create({
   },
   cartItemNotes: {
     fontSize: 11,
-    color: Colors.caramel,
-    fontWeight: '600',
+    color: Colors.textMuted,
+    fontStyle: 'italic',
     marginTop: 2,
   },
   cartItemPrice: {
     fontSize: 13,
     fontWeight: '800',
-    color: Colors.cafeBrown,
+    color: Colors.textPrimary,
     marginTop: 3,
+  },
+  upsellSection: {
+    marginBottom: Spacing.base,
+  },
+  upsellSectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
+  },
+  upsellScroll: {
+    gap: 12,
+  },
+  upsellCard: {
+    width: 140,
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.md,
+    padding: 8,
+    ...Elevation.sm,
+  },
+  upsellImage: {
+    width: '100%',
+    height: 80,
+    borderRadius: Radius.xs,
+    backgroundColor: '#F0F0F0',
+  },
+  upsellName: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginTop: 6,
+  },
+  upsellPrice: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: Colors.uberGreenDark,
+    marginTop: 2,
+  },
+  upsellAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8F8F0',
+    borderRadius: Radius.xs,
+    paddingVertical: 4,
+    marginTop: 6,
+  },
+  upsellAddText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.uberGreenDark,
+    marginLeft: 2,
+  },
+  tipCard: {
+    marginBottom: Spacing.base,
+  },
+  tipHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tipTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  tipSubtitle: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: 2,
+    marginBottom: Spacing.sm,
+  },
+  tipOptionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tipChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: '#FFFFFF',
+  },
+  tipChipActive: {
+    backgroundColor: Colors.uberBlack,
+    borderColor: Colors.uberBlack,
+  },
+  tipChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  tipChipTextActive: {
+    color: '#FFFFFF',
   },
   promoCard: {
     marginBottom: Spacing.base,
@@ -476,7 +752,7 @@ const styles = StyleSheet.create({
   },
   promoInput: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F6F6F6',
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.md,
@@ -489,7 +765,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.successContainer,
+    backgroundColor: '#E8F8F0',
     padding: Spacing.md,
     borderRadius: Radius.md,
   },
@@ -502,41 +778,85 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.error,
   },
-  instructionsCard: {
-    marginBottom: Spacing.base,
-  },
-  instructionsInput: {
-    backgroundColor: Colors.background,
-    borderWidth: 1,
-    borderColor: Colors.border,
+  receiptContainer: {
+    backgroundColor: '#FFFFFF',
     borderRadius: Radius.md,
-    padding: Spacing.md,
-    fontSize: 13,
-    color: Colors.textPrimary,
-    textAlignVertical: 'top',
-    height: 64,
+    overflow: 'hidden',
+    ...Elevation.sm,
   },
-  billCard: {
-    marginBottom: Spacing.base,
+  receiptInner: {
+    padding: Spacing.base,
+  },
+  receiptHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  receiptTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+    letterSpacing: 1,
+  },
+  receiptId: {
+    fontSize: 10,
+    color: Colors.textMuted,
+  },
+  receiptDivider: {
+    borderStyle: 'dashed',
+    borderWidth: 0.8,
+    borderColor: '#CCCCCC',
+    marginVertical: 10,
+  },
+  receiptDividerThick: {
+    borderWidth: 1,
+    borderColor: '#000000',
+    marginVertical: 10,
   },
   billRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: Spacing.sm,
+    marginBottom: 6,
   },
-  totalBillRow: {
-    marginTop: Spacing.sm,
-    paddingTop: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    alignItems: 'center',
+  receiptLabel: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  receiptValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  receiptTotalLabel: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: Colors.textPrimary,
+  },
+  receiptTotalValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: Colors.uberGreenDark,
+  },
+  serratedRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 2,
+    marginBottom: -4,
+  },
+  serratedTooth: {
+    width: 14,
+    height: 8,
+    backgroundColor: '#F6F6F6',
+    borderTopLeftRadius: 7,
+    borderTopRightRadius: 7,
   },
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: Colors.surface,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
     borderTopWidth: 1,
@@ -557,7 +877,7 @@ const styles = StyleSheet.create({
   footerTotal: {
     fontSize: 18,
     fontWeight: '800',
-    color: Colors.cafeBrown,
+    color: Colors.textPrimary,
   },
   placeOrderBtn: {
     flex: 1.2,
@@ -567,13 +887,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.xl,
-    backgroundColor: Colors.background,
+    backgroundColor: '#FFFFFF',
   },
   emptyIconCircle: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: Colors.cafeBrownContainer,
+    backgroundColor: '#E8F8F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -582,13 +902,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.xl,
-    backgroundColor: Colors.background,
+    backgroundColor: '#FFFFFF',
   },
   successIconCircle: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: Colors.successContainer,
+    backgroundColor: Colors.uberGreen,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { Colors } from '@/constants/colors';
 import { Radius, Spacing } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
 import { ApiResponse } from '@/types/auth';
+import { hapticFeedback } from '@/utils/haptics';
 
 export default function QrScannerModal() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function QrScannerModal() {
   const [manualCode, setManualCode] = useState('');
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
 
   useEffect(() => {
     if (!permission?.granted) {
@@ -29,9 +31,9 @@ export default function QrScannerModal() {
   const handleTableLookup = async (tokenOrNumber: string) => {
     if (!tokenOrNumber.trim()) return;
     setLoading(true);
+    hapticFeedback.tap();
 
     try {
-      // Try lookup by table number or qr token
       const num = parseInt(tokenOrNumber, 10);
       let tableRes;
 
@@ -45,13 +47,16 @@ export default function QrScannerModal() {
       }
 
       if (tableRes) {
+        hapticFeedback.success();
         setTable(tableRes.id, tableRes.tableNumber);
-        Alert.alert('Table Selected', `Successfully checked into Table ${tableRes.tableNumber}!`);
+        Alert.alert('Table Selected! ☕', `Successfully checked into Table ${tableRes.tableNumber}!`);
         router.back();
       } else {
+        hapticFeedback.error();
         Alert.alert('Table Not Found', 'Could not locate table with this QR code or number.');
       }
     } catch (e) {
+      hapticFeedback.error();
       Alert.alert('Error', 'Invalid table reference or network error');
     } finally {
       setLoading(false);
@@ -72,14 +77,18 @@ export default function QrScannerModal() {
   if (!permission.granted) {
     return (
       <View style={styles.permissionContainer}>
-        <Ionicons name="camera-outline" size={64} color={Colors.cafeBrown} />
+        <Ionicons name="camera-outline" size={64} color={Colors.uberGreen} />
         <Text style={[Typography.h3, { marginTop: Spacing.base, textAlign: 'center' }]}>
           Camera Permission Required
         </Text>
         <Text style={[Typography.bodyMedium, styles.permissionText]}>
           We need camera access to scan physical table QR codes at the café.
         </Text>
-        <CafeButton title="Grant Permission" onPress={requestPermission} style={{ marginTop: Spacing.xl }} />
+        <CafeButton
+          title="Grant Permission"
+          onPress={requestPermission}
+          style={{ marginTop: Spacing.lg }}
+        />
       </View>
     );
   }
@@ -88,42 +97,58 @@ export default function QrScannerModal() {
     <View style={styles.container}>
       <CameraView
         style={StyleSheet.absoluteFill}
+        facing="back"
+        enableTorch={torchOn}
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-        barcodeScannerSettings={{
-          barcodeTypes: ['qr'],
-        }}
-      >
-        <View style={styles.overlay}>
-          <View style={styles.scannerBox}>
-            <View style={styles.cornerTopLeft} />
-            <View style={styles.cornerTopRight} />
-            <View style={styles.cornerBottomLeft} />
-            <View style={styles.cornerBottomRight} />
-          </View>
-          <Text style={styles.instructionText}>Align table QR code within the frame</Text>
-        </View>
-      </CameraView>
+      />
 
-      {/* Manual Input Fallback Footer */}
-      <View style={styles.footer}>
-        <Text style={[Typography.labelMedium, { marginBottom: Spacing.xs, color: Colors.textPrimary }]}>
-          Or enter table number manually:
+      {/* Top Header Controls */}
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
+          <Ionicons name="close" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Scan Table QR Code</Text>
+        <TouchableOpacity
+          style={[styles.iconBtn, torchOn && { backgroundColor: Colors.uberGreen }]}
+          onPress={() => {
+            setTorchOn(!torchOn);
+            hapticFeedback.tap();
+          }}
+        >
+          <Ionicons name={torchOn ? 'flash' : 'flash-off'} size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Viewfinder Frame */}
+      <View style={styles.viewfinderCenter}>
+        <View style={styles.viewfinderBox}>
+          <View style={[styles.corner, styles.topLeft]} />
+          <View style={[styles.corner, styles.topRight]} />
+          <View style={[styles.corner, styles.bottomLeft]} />
+          <View style={[styles.corner, styles.bottomRight]} />
+        </View>
+        <Text style={styles.scannerInstruction}>
+          Align the QR code on your table inside the frame to connect
         </Text>
+      </View>
+
+      {/* Manual Code Input Footer */}
+      <View style={styles.footer}>
+        <Text style={styles.footerTitle}>Or enter table number manually</Text>
         <View style={styles.manualRow}>
           <TextInput
-            style={styles.manualInput}
-            placeholder="e.g. 1, 2, 3..."
+            style={styles.input}
+            placeholder="e.g. Table 4"
             placeholderTextColor={Colors.textMuted}
             value={manualCode}
             onChangeText={setManualCode}
-            keyboardType="number-pad"
+            keyboardType="numeric"
           />
           <CafeButton
-            title="Check In"
-            size="sm"
-            loading={loading}
+            title="Connect"
             onPress={() => handleTableLookup(manualCode)}
-            style={{ marginLeft: Spacing.sm }}
+            loading={loading}
+            style={{ minWidth: 110 }}
           />
         </View>
       </View>
@@ -141,100 +166,111 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.xl,
-    backgroundColor: Colors.background,
+    backgroundColor: '#FFFFFF',
   },
   permissionText: {
-    color: Colors.textSecondary,
     textAlign: 'center',
+    color: Colors.textSecondary,
     marginTop: Spacing.xs,
-    maxWidth: 280,
   },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.base,
+    paddingTop: 54,
+  },
+  iconBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scannerBox: {
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  viewfinderCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewfinderBox: {
     width: 240,
     height: 240,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    borderRadius: Radius.lg,
     position: 'relative',
   },
-  cornerTopLeft: {
+  corner: {
     position: 'absolute',
+    width: 32,
+    height: 32,
+    borderColor: Colors.uberGreen,
+    borderWidth: 4,
+  },
+  topLeft: {
     top: 0,
     left: 0,
-    width: 32,
-    height: 32,
-    borderColor: Colors.cafeGold,
-    borderTopWidth: 4,
-    borderLeftWidth: 4,
+    borderBottomWidth: 0,
+    borderRightWidth: 0,
+    borderTopLeftRadius: 12,
   },
-  cornerTopRight: {
-    position: 'absolute',
+  topRight: {
     top: 0,
     right: 0,
-    width: 32,
-    height: 32,
-    borderColor: Colors.cafeGold,
-    borderTopWidth: 4,
-    borderRightWidth: 4,
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+    borderTopRightRadius: 12,
   },
-  cornerBottomLeft: {
-    position: 'absolute',
+  bottomLeft: {
     bottom: 0,
     left: 0,
-    width: 32,
-    height: 32,
-    borderColor: Colors.cafeGold,
-    borderBottomWidth: 4,
-    borderLeftWidth: 4,
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+    borderBottomLeftRadius: 12,
   },
-  cornerBottomRight: {
-    position: 'absolute',
+  bottomRight: {
     bottom: 0,
     right: 0,
-    width: 32,
-    height: 32,
-    borderColor: Colors.cafeGold,
-    borderBottomWidth: 4,
-    borderRightWidth: 4,
+    borderTopWidth: 0,
+    borderLeftWidth: 0,
+    borderBottomRightRadius: 12,
   },
-  instructionText: {
+  scannerInstruction: {
     color: '#FFFFFF',
-    ...Typography.bodyMedium,
-    marginTop: Spacing.xl,
+    fontSize: 13,
     textAlign: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.full,
+    marginTop: Spacing.xl,
+    maxWidth: 260,
+    opacity: 0.9,
   },
   footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.surface,
-    padding: Spacing.xl,
+    backgroundColor: 'rgba(20,18,16,0.92)',
+    padding: Spacing.lg,
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
   },
+  footerTitle: {
+    color: '#ECE0D6',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: Spacing.sm,
+  },
   manualRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    gap: 12,
   },
-  manualInput: {
+  input: {
     flex: 1,
-    backgroundColor: Colors.background,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: '#282420',
     borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: '#36302B',
     paddingHorizontal: Spacing.base,
-    height: 44,
+    color: '#FFFFFF',
     fontSize: 16,
-    color: Colors.textPrimary,
   },
 });
