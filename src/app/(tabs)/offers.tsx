@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 import { useCartStore } from '@/stores/cartStore';
@@ -17,7 +18,7 @@ import { CafeCard } from '@/components/common/Card';
 import { CafeButton } from '@/components/common/Button';
 import { FloatingCartBar } from '@/components/specific/FloatingCartBar';
 import { Colors } from '@/constants/colors';
-import { Radius, Spacing } from '@/constants/dimens';
+import { Radius, Spacing, Elevation } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
 import { formatPaise } from '@/utils/currency';
 import { ApiResponse } from '@/types/auth';
@@ -43,6 +44,7 @@ export default function OffersScreen() {
   });
 
   const handleApplyCoupon = (offer: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const subtotal = getSubtotalPaise();
     if (subtotal < offer.minOrderAmountPaise) {
       Alert.alert(
@@ -71,26 +73,29 @@ export default function OffersScreen() {
       discountPaise: Math.round(discountPaise),
     });
 
-    Alert.alert('Coupon Applied', `Code ${offer.code} successfully applied to your cart!`);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert('Coupon Applied 🎉', `Code ${offer.code} successfully applied to your basket!`);
   };
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={Typography.h2}>Special Deals & Coupons</Text>
+          <Text style={[Typography.h2, { color: Colors.textPrimary, fontWeight: '900' }]}>
+            Exclusive Deals & Vouchers
+          </Text>
           <Text style={[Typography.bodyMedium, { color: Colors.textSecondary, marginTop: 4 }]}>
-            Apply promo codes to save on artisanal coffee and gourmet treats
+            Redeem artisanal promo perks to save on craft pour-overs and warm bakes.
           </Text>
         </View>
 
         {isLoading ? (
-          <ActivityIndicator size="large" color={Colors.cafeBrown} style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color={Colors.uberGreen} style={{ marginTop: 40 }} />
         ) : !offers || offers.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="pricetag-outline" size={48} color={Colors.textMuted} />
             <Text style={[Typography.bodyMedium, { color: Colors.textMuted, marginTop: Spacing.md }]}>
-              No offers currently active. Check back soon!
+              No vouchers active at the moment. Check back soon!
             </Text>
           </View>
         ) : (
@@ -98,54 +103,71 @@ export default function OffersScreen() {
             const isApplied = appliedOffer?.code === offer.code;
 
             return (
-              <CafeCard key={offer.id} variant="elevated" style={styles.offerCard}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.couponTag}>
-                    <Text style={styles.couponCode}>{offer.code}</Text>
+              <View key={offer.id} style={styles.ticketContainer}>
+                {/* Perforated Side Notches */}
+                <View style={styles.notchLeft} />
+                <View style={styles.notchRight} />
+
+                <View style={styles.ticketInner}>
+                  <View style={styles.cardHeader}>
+                    <View style={styles.couponTag}>
+                      <Ionicons name="pricetag" size={12} color={Colors.uberGreenDark} style={{ marginRight: 4 }} />
+                      <Text style={styles.couponCode}>{offer.code}</Text>
+                    </View>
+                    <View style={styles.discountBadge}>
+                      <Text style={styles.discountHighlight}>
+                        {offer.discountType === 'PERCENTAGE'
+                          ? `${offer.discountValue}% OFF`
+                          : `₹${offer.discountValue / 100} FLAT OFF`}
+                      </Text>
+                    </View>
                   </View>
-                  <Text style={styles.discountHighlight}>
-                    {offer.discountType === 'PERCENTAGE'
-                      ? `${offer.discountValue}% OFF`
-                      : `₹${offer.discountValue / 100} FLAT OFF`}
-                  </Text>
-                </View>
 
-                <Text style={[Typography.h3, styles.offerTitle]}>{offer.title}</Text>
-                {offer.description ? (
-                  <Text style={[Typography.bodyMedium, styles.offerDesc]}>
-                    {offer.description}
-                  </Text>
-                ) : null}
+                  <Text style={[Typography.h3, styles.offerTitle]}>{offer.title}</Text>
+                  {offer.description ? (
+                    <Text style={[Typography.bodyMedium, styles.offerDesc]}>
+                      {offer.description}
+                    </Text>
+                  ) : null}
 
-                <View style={styles.termsRow}>
-                  <Ionicons name="information-circle-outline" size={14} color={Colors.textMuted} />
-                  <Text style={[Typography.bodySmall, styles.termsText]}>
-                    Min order: {formatPaise(offer.minOrderAmountPaise)}
-                    {offer.maxDiscountAmountPaise
-                      ? ` • Max discount: ${formatPaise(offer.maxDiscountAmountPaise)}`
-                      : ''}
-                  </Text>
-                </View>
+                  {/* Dashed Perforation Line */}
+                  <View style={styles.dashedPerforation} />
 
-                <View style={styles.actionRow}>
-                  {isApplied ? (
-                    <CafeButton
-                      title="Applied ✓"
-                      variant="secondary"
-                      size="sm"
-                      onPress={removeOffer}
-                      style={{ flex: 1 }}
-                    />
-                  ) : (
-                    <CafeButton
-                      title="Apply to Cart"
-                      size="sm"
-                      onPress={() => handleApplyCoupon(offer)}
-                      style={{ flex: 1 }}
-                    />
-                  )}
+                  <View style={styles.termsRow}>
+                    <Ionicons name="shield-checkmark-outline" size={14} color={Colors.uberGreenDark} />
+                    <Text style={[Typography.bodySmall, styles.termsText]}>
+                      Min order: {formatPaise(offer.minOrderAmountPaise)}
+                      {offer.maxDiscountAmountPaise
+                        ? ` • Max discount: ${formatPaise(offer.maxDiscountAmountPaise)}`
+                        : ''}
+                    </Text>
+                  </View>
+
+                  <View style={styles.actionRow}>
+                    {isApplied ? (
+                      <TouchableOpacity
+                        style={styles.appliedButton}
+                        onPress={() => {
+                          Haptics.selectionAsync();
+                          removeOffer();
+                        }}
+                      >
+                        <Ionicons name="checkmark-circle" size={16} color={Colors.uberGreenDark} />
+                        <Text style={styles.appliedButtonText}>Applied to Basket</Text>
+                        <Text style={styles.removeTagText}>(Tap to Remove)</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.applyButton}
+                        onPress={() => handleApplyCoupon(offer)}
+                      >
+                        <Text style={styles.applyButtonText}>Apply Code</Text>
+                        <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
-              </CafeCard>
+              </View>
             );
           })
         )}
@@ -169,7 +191,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Spacing.base,
-    paddingBottom: 90,
+    paddingBottom: 130,
   },
   header: {
     marginBottom: Spacing.base,
@@ -179,10 +201,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 60,
   },
-  offerCard: {
+  ticketContainer: {
+    position: 'relative',
     marginBottom: Spacing.base,
-    borderWidth: 1,
-    borderColor: '#E7E5E4',
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.surface,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+    ...Elevation.sm,
+  },
+  notchLeft: {
+    position: 'absolute',
+    left: -12,
+    top: '48%',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.background,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    zIndex: 10,
+  },
+  notchRight: {
+    position: 'absolute',
+    right: -12,
+    top: '48%',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.background,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    zIndex: 10,
+  },
+  ticketInner: {
+    padding: Spacing.base,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -191,6 +245,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   couponTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.uberGreenContainer,
     paddingHorizontal: Spacing.md,
     paddingVertical: 5,
@@ -200,39 +256,84 @@ const styles = StyleSheet.create({
     borderColor: Colors.uberGreen,
   },
   couponCode: {
-    fontWeight: '800',
+    fontWeight: '900',
     color: Colors.uberGreenDark,
     letterSpacing: 1.2,
     fontSize: 13,
   },
+  discountBadge: {
+    backgroundColor: '#000000',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+  },
   discountHighlight: {
-    ...Typography.labelLarge,
-    color: Colors.uberGreenDark,
-    fontWeight: '800',
-    fontSize: 15,
+    color: '#FFFFFF',
+    fontWeight: '900',
+    fontSize: 12,
+    letterSpacing: 0.5,
   },
   offerTitle: {
     color: Colors.textPrimary,
-    marginTop: 2,
+    marginTop: 4,
+    fontWeight: '800',
   },
   offerDesc: {
     color: Colors.textSecondary,
     marginTop: 4,
+    fontSize: 13,
+  },
+  dashedPerforation: {
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#E2E2E2',
+    marginVertical: 12,
   },
   termsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: Spacing.md,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    gap: 6,
   },
   termsText: {
     color: Colors.textMuted,
-    marginLeft: 4,
+    fontSize: 12,
   },
   actionRow: {
     marginTop: Spacing.md,
+  },
+  applyButton: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.uberGreen,
+    paddingVertical: 12,
+    borderRadius: Radius.md,
+    gap: 8,
+  },
+  applyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  appliedButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.uberGreenContainer,
+    paddingVertical: 12,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: Colors.uberGreen,
+    gap: 6,
+  },
+  appliedButtonText: {
+    color: Colors.uberGreenDark,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  removeTagText: {
+    color: Colors.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

@@ -20,7 +20,6 @@ import { CafeCard } from '@/components/common/Card';
 import { QuantityStepper } from '@/components/specific/QuantityStepper';
 import { VegIndicator } from '@/components/specific/VegIndicator';
 import { FloatingCartBar } from '@/components/specific/FloatingCartBar';
-import { AnimatedSearchTicker } from '@/components/specific/AnimatedSearchTicker';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing, Elevation } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
@@ -143,14 +142,16 @@ export default function HomeScreen() {
           activeOpacity={0.9}
           onPress={() => router.push('/(tabs)/menu')}
         >
-          <Ionicons name="search" size={20} color={Colors.uberGreen} style={{ marginRight: 10 }} />
+          <View style={styles.searchIconBox}>
+            <Ionicons name="search" size={18} color={Colors.uberGreen} />
+          </View>
           <Text style={styles.searchShortcutText}>Search 'Cold Brew', 'Matcha', 'Pastries'...</Text>
           <View style={styles.searchShortcutBadge}>
             <Ionicons name="options-outline" size={16} color="#FFFFFF" />
           </View>
         </TouchableOpacity>
 
-        {/* Hero Banner Bento Card */}
+        {/* Hero Banner Bento Card (Uber Eats Modern Green & Black Aesthetic) */}
         <View style={styles.heroWrapper}>
           <Image
             source={{ uri: MediaAssets.heroes.pourOver }}
@@ -159,14 +160,19 @@ export default function HomeScreen() {
             transition={300}
           />
           <LinearGradient
-            colors={['rgba(26,15,10,0.1)', 'rgba(26,15,10,0.65)', 'rgba(26,15,10,0.92)']}
+            colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.92)']}
             style={StyleSheet.absoluteFill}
           />
           <View style={styles.heroContent}>
+            {/* Top Micro Badges */}
             <View style={styles.heroBadgeRow}>
               <View style={styles.artisanBadge}>
-                <Ionicons name="sparkles" size={12} color={Colors.cafeGold} />
+                <Ionicons name="sparkles" size={12} color={Colors.uberGreen} />
                 <Text style={styles.artisanBadgeText}>ARTISAN ROASTERY</Text>
+              </View>
+              <View style={styles.prepBadgeHero}>
+                <Ionicons name="flash" size={11} color="#FFD700" />
+                <Text style={styles.prepBadgeHeroText}>⚡ 15-20 min</Text>
               </View>
               {cafeProfile?.name ? (
                 <Text style={styles.cafeNameText}>{cafeProfile.name}</Text>
@@ -181,11 +187,13 @@ export default function HomeScreen() {
             {/* Glassmorphic Table Check-In Capsule */}
             <View style={styles.tableCapsule}>
               <View style={styles.tableCapsuleLeft}>
-                <Ionicons
-                  name={tableNumber ? 'restaurant' : 'qr-code-outline'}
-                  size={20}
-                  color={Colors.caramel}
-                />
+                <View style={styles.tableIconCircle}>
+                  <Ionicons
+                    name={tableNumber ? 'restaurant' : 'qr-code-outline'}
+                    size={16}
+                    color="#FFFFFF"
+                  />
+                </View>
                 <View style={{ marginLeft: 10 }}>
                   <Text style={styles.tableCapsuleTitle}>
                     {tableNumber ? `Dine-In • Table ${tableNumber}` : 'Dine-In Check-In'}
@@ -193,7 +201,7 @@ export default function HomeScreen() {
                   <Text style={styles.tableCapsuleSubtitle}>
                     {tableNumber
                       ? 'Orders served directly to your seat'
-                      : 'Scan table code for contactless service'}
+                      : 'Scan table QR for contactless service'}
                   </Text>
                 </View>
               </View>
@@ -202,7 +210,7 @@ export default function HomeScreen() {
                 onPress={() => router.push('/modal/qr-scanner')}
               >
                 <Text style={styles.tableCapsuleBtnText}>
-                  {tableNumber ? 'Change' : 'Scan'}
+                  {tableNumber ? 'Change' : 'Scan QR'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -215,30 +223,30 @@ export default function HomeScreen() {
             style={styles.actionCard}
             onPress={() => router.push('/modal/reservations')}
           >
-            <View style={[styles.actionIconBox, { backgroundColor: '#F5EBE6' }]}>
-              <Ionicons name="calendar" size={22} color={Colors.cafeBrown} />
+            <View style={[styles.actionIconBox, { backgroundColor: Colors.uberGreenContainer }]}>
+              <Ionicons name="calendar" size={22} color={Colors.uberGreenDark} />
             </View>
             <Text style={styles.actionCardTitle}>Reserve Table</Text>
-            <Text style={styles.actionCardSub}>Instant confirmation</Text>
+            <Text style={styles.actionCardSub}>Instant seat pass</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.actionCard}
             onPress={() => router.push('/(tabs)/menu')}
           >
-            <View style={[styles.actionIconBox, { backgroundColor: '#E9F5E8' }]}>
-              <Ionicons name="restaurant" size={22} color={Colors.matcha} />
+            <View style={[styles.actionIconBox, { backgroundColor: '#E8F5E9' }]}>
+              <Ionicons name="restaurant" size={22} color="#2E7D32" />
             </View>
             <Text style={styles.actionCardTitle}>Curated Menu</Text>
-            <Text style={styles.actionCardSub}>30+ Specialty items</Text>
+            <Text style={styles.actionCardSub}>30+ Handcrafted</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.actionCard}
             onPress={() => router.push('/(tabs)/offers')}
           >
-            <View style={[styles.actionIconBox, { backgroundColor: '#FFF5E5' }]}>
-              <Ionicons name="pricetag" size={22} color={Colors.warning} />
+            <View style={[styles.actionIconBox, { backgroundColor: '#FFF8E1' }]}>
+              <Ionicons name="pricetag" size={22} color="#F57F17" />
             </View>
             <Text style={styles.actionCardTitle}>Exclusive Deals</Text>
             <Text style={styles.actionCardSub}>Save up to 25%</Text>
@@ -277,7 +285,7 @@ export default function HomeScreen() {
           <View style={styles.sectionContainer}>
             <View style={styles.sectionHeader}>
               <View>
-                <Text style={styles.sectionTitle}>Limited Offers</Text>
+                <Text style={styles.sectionTitle}>Exclusive Deals</Text>
                 <Text style={styles.sectionSubtitle}>Handcrafted perks for your table</Text>
               </View>
               <TouchableOpacity onPress={() => router.push('/(tabs)/offers')}>
@@ -298,7 +306,7 @@ export default function HomeScreen() {
                   onPress={() => router.push('/(tabs)/offers')}
                 >
                   <LinearGradient
-                    colors={[Colors.cafeBrownDark, Colors.cafeBrown]}
+                    colors={['#000000', '#1C1C1E']}
                     style={StyleSheet.absoluteFill}
                   />
                   <View style={styles.offerCardHeader}>
@@ -309,7 +317,7 @@ export default function HomeScreen() {
                           : `₹${offer.discountValue / 100} OFF`}
                       </Text>
                     </View>
-                    <Ionicons name="sparkles" size={16} color={Colors.caramel} />
+                    <Ionicons name="sparkles" size={16} color={Colors.uberGreen} />
                   </View>
                   <Text style={styles.offerCardTitle} numberOfLines={1}>
                     {offer.title}
@@ -328,7 +336,7 @@ export default function HomeScreen() {
           <View style={styles.sectionHeader}>
             <View>
               <Text style={styles.sectionTitle}>Chef&apos;s Signature Picks</Text>
-              <Text style={styles.sectionSubtitle}>Pairings recommended by our baristas</Text>
+              <Text style={styles.sectionSubtitle}>Pairings recommended by our master baristas</Text>
             </View>
             <TouchableOpacity onPress={() => router.push('/(tabs)/menu')}>
               <Text style={styles.seeAllText}>Full Menu</Text>
@@ -336,7 +344,7 @@ export default function HomeScreen() {
           </View>
 
           {itemsLoading ? (
-            <ActivityIndicator size="small" color={Colors.cafeBrown} style={{ marginTop: 20 }} />
+            <ActivityIndicator size="small" color={Colors.uberGreen} style={{ marginTop: 20 }} />
           ) : (
             <View style={styles.specialsList}>
               {menuItemsData?.map((item) => {
@@ -366,18 +374,20 @@ export default function HomeScreen() {
                       {/* Right: Item Metadata & Stepper */}
                       <View style={styles.itemContent}>
                         <View style={styles.itemMetaTop}>
+                          <View style={styles.ratingBadge}>
+                            <Ionicons name="star" size={10} color={Colors.ratingGold} />
+                            <Text style={styles.ratingText}>4.8</Text>
+                          </View>
+                          <View style={styles.prepBadge}>
+                            <Ionicons name="flash-outline" size={10} color={Colors.uberGreen} />
+                            <Text style={styles.prepText}>15 mins</Text>
+                          </View>
                           {item.isSpicy ? (
-                            <View style={styles.miniSpicyPill}>
-                              <Ionicons name="flame" size={11} color={Colors.error} />
-                              <Text style={styles.miniPillText}>Spicy</Text>
+                            <View style={styles.spicyBadge}>
+                              <Ionicons name="flame" size={10} color={Colors.error} />
+                              <Text style={styles.spicyText}>Spicy</Text>
                             </View>
-                          ) : (
-                            <View style={styles.miniBrewPill}>
-                              <Ionicons name="time-outline" size={11} color={Colors.cafeBrown} />
-                              <Text style={styles.miniPillText}>Fresh Brew</Text>
-                            </View>
-                          )}
-                          <Text style={styles.ratingText}>★ 4.9</Text>
+                          ) : null}
                         </View>
 
                         <Text style={styles.itemName} numberOfLines={1}>
@@ -452,26 +462,36 @@ const styles = StyleSheet.create({
     width: 72,
   },
   storyRing: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     padding: 2.5,
-    borderWidth: 2,
+    borderWidth: 2.5,
     borderColor: Colors.uberGreen,
     backgroundColor: Colors.surface,
+    ...Elevation.sm,
   },
   searchShortcutBar: {
     marginHorizontal: Spacing.base,
     marginTop: Spacing.md,
     backgroundColor: Colors.surface,
     borderRadius: Radius.full,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: Colors.border,
     ...Elevation.sm,
+  },
+  searchIconBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: Colors.uberGreenContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
   },
   searchShortcutText: {
     flex: 1,
@@ -480,7 +500,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   searchShortcutBadge: {
-    backgroundColor: Colors.uberGreen,
+    backgroundColor: Colors.uberBlack,
     width: 28,
     height: 28,
     borderRadius: 14,
@@ -508,7 +528,7 @@ const styles = StyleSheet.create({
     margin: Spacing.base,
     borderRadius: Radius.xl,
     overflow: 'hidden',
-    height: 250,
+    height: 260,
     position: 'relative',
     ...Elevation.md,
   },
@@ -534,17 +554,28 @@ const styles = StyleSheet.create({
   artisanBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: Radius.full,
     gap: 4,
   },
   artisanBadgeText: {
-    color: Colors.caramel,
+    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  prepBadgeHero: {
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
+  prepBadgeHeroText: {
+    color: '#FFD700',
+    fontSize: 10,
+    fontWeight: '800',
   },
   cafeNameText: {
     color: '#FFFFFF',
@@ -555,7 +586,7 @@ const styles = StyleSheet.create({
   heroHeadline: {
     color: '#FFFFFF',
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '900',
     letterSpacing: -0.5,
     marginTop: 2,
   },
@@ -569,9 +600,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(26,15,10,0.7)',
+    backgroundColor: 'rgba(18,18,18,0.85)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: 'rgba(255,255,255,0.18)',
     borderRadius: Radius.lg,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -581,6 +612,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+  },
+  tableIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.uberGreen,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tableCapsuleTitle: {
     color: '#FFFFFF',
@@ -592,13 +631,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   tableCapsuleBtn: {
-    backgroundColor: Colors.caramel,
+    backgroundColor: Colors.uberGreen,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: Radius.full,
   },
   tableCapsuleBtnText: {
-    color: Colors.espressoDark,
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '800',
   },
@@ -627,7 +666,7 @@ const styles = StyleSheet.create({
   },
   actionCardTitle: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
     textAlign: 'center',
   },
@@ -653,8 +692,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   moodChipActive: {
-    backgroundColor: Colors.cafeBrown,
-    borderColor: Colors.cafeBrown,
+    backgroundColor: Colors.uberGreen,
+    borderColor: Colors.uberGreen,
   },
   moodChipText: {
     fontSize: 12,
@@ -663,6 +702,7 @@ const styles = StyleSheet.create({
   },
   moodChipTextActive: {
     color: '#FFFFFF',
+    fontWeight: '800',
   },
   sectionContainer: {
     marginTop: Spacing.xl,
@@ -688,7 +728,7 @@ const styles = StyleSheet.create({
   seeAllText: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.cafeBrown,
+    color: Colors.uberGreenDark,
   },
   offersScroll: {
     gap: 12,
@@ -702,6 +742,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     overflow: 'hidden',
     position: 'relative',
+    borderWidth: 1.5,
+    borderColor: Colors.uberGreen,
     ...Elevation.md,
   },
   offerCardHeader: {
@@ -710,13 +752,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   offerDiscountBadge: {
-    backgroundColor: Colors.caramel,
+    backgroundColor: Colors.uberGreen,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: Radius.full,
   },
   offerDiscountText: {
-    color: Colors.espressoDark,
+    color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '800',
   },
@@ -746,17 +788,20 @@ const styles = StyleSheet.create({
     padding: 0,
     overflow: 'hidden',
     borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   cardTouchWrapper: {
     flexDirection: 'row',
     padding: Spacing.md,
   },
   imageBox: {
-    width: 100,
-    height: 100,
+    width: 104,
+    height: 104,
     borderRadius: Radius.md,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: Colors.background,
   },
   itemImage: {
     width: '100%',
@@ -777,32 +822,54 @@ const styles = StyleSheet.create({
   },
   itemMetaTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 6,
   },
-  miniBrewPill: {
+  ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-  },
-  miniSpicyPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  miniPillText: {
-    fontSize: 10,
-    color: Colors.textMuted,
-    fontWeight: '600',
+    backgroundColor: Colors.uberGreenContainer,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    gap: 2,
   },
   ratingText: {
     fontSize: 11,
-    color: Colors.cafeGoldDark,
+    fontWeight: '800',
+    color: Colors.uberGreenDark,
+  },
+  prepBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surfaceVariant,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    gap: 2,
+  },
+  prepText: {
+    fontSize: 11,
     fontWeight: '700',
+    color: Colors.textSecondary,
+  },
+  spicyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.errorContainer,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    gap: 2,
+  },
+  spicyText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.error,
   },
   itemName: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
   },
   itemDescription: {
@@ -819,7 +886,7 @@ const styles = StyleSheet.create({
   itemPrice: {
     fontSize: 16,
     fontWeight: '800',
-    color: Colors.cafeBrown,
+    color: Colors.textPrimary,
   },
   stepperContainer: {
     alignItems: 'flex-end',
