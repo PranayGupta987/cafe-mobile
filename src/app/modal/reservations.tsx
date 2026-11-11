@@ -9,13 +9,14 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 import { CafeCard } from '@/components/common/Card';
 import { CafeButton } from '@/components/common/Button';
 import { Colors } from '@/constants/colors';
-import { Radius, Spacing, Elevation } from '@/constants/dimens';
+import { Radius, Spacing } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
 import { ApiResponse } from '@/types/auth';
 import { hapticFeedback } from '@/utils/haptics';
@@ -29,8 +30,46 @@ const AMBIANCE_ZONES = [
 
 const TIME_SLOTS = ['09:00', '11:30', '14:00', '16:30', '19:00', '21:00'];
 
+const getDateOptions = () => {
+  const options = [];
+  const today = new Date();
+
+  options.push({
+    label: 'Today',
+    sub: today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    iso: today.toISOString().split('T')[0],
+  });
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  options.push({
+    label: 'Tomorrow',
+    sub: tomorrow.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    iso: tomorrow.toISOString().split('T')[0],
+  });
+
+  const day2 = new Date(today);
+  day2.setDate(today.getDate() + 2);
+  options.push({
+    label: day2.toLocaleDateString('en-US', { weekday: 'short' }),
+    sub: day2.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    iso: day2.toISOString().split('T')[0],
+  });
+
+  const day3 = new Date(today);
+  day3.setDate(today.getDate() + 3);
+  options.push({
+    label: day3.toLocaleDateString('en-US', { weekday: 'short' }),
+    sub: day3.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    iso: day3.toISOString().split('T')[0],
+  });
+
+  return options;
+};
+
 export default function ReservationsModal() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
 
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -85,21 +124,31 @@ export default function ReservationsModal() {
       hapticFeedback.warning();
       queryClient.invalidateQueries({ queryKey: ['my-reservations'] });
       Alert.alert('Cancelled', 'Reservation cancelled successfully.');
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'Failed to cancel reservation');
     }
   };
 
+  const dateOptions = getDateOptions();
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[Typography.editorialMedium, { color: Colors.textPrimary }]}>
-          Table Seating & Reservations
-        </Text>
-        <Text style={[Typography.bodyMedium, { color: Colors.textSecondary, marginTop: 4 }]}>
-          Select your ideal ambiance and seating zone for specialty dining
-        </Text>
+    <ScrollView
+      style={[styles.container, { paddingTop: Math.max(insets.top, 12) }]}
+      contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 24) + 60 }]}
+    >
+      {/* Header with Close Button */}
+      <View style={styles.headerRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={[Typography.editorialMedium, { color: Colors.textPrimary }]}>
+            Table Seating & Reservations
+          </Text>
+          <Text style={[Typography.bodyMedium, { color: Colors.textSecondary, marginTop: 4 }]}>
+            Select your ideal ambiance and seating zone for specialty dining
+          </Text>
+        </View>
+        <TouchableOpacity style={styles.closeBtn} onPress={() => router.back()}>
+          <Ionicons name="close" size={20} color={Colors.textPrimary} />
+        </TouchableOpacity>
       </View>
 
       {/* Visual Interactive Floorplan & Ambiance Selector (Improvements 45 & 48) */}
@@ -138,15 +187,23 @@ export default function ReservationsModal() {
       <CafeCard variant="elevated" style={styles.card}>
         <Text style={styles.cardSectionTitle}>2. Date & Time Slot</Text>
         <View style={styles.dateSelectorRow}>
-          {['Today', 'Tomorrow', 'This Friday', 'This Saturday'].map((d, index) => {
-            const active = index === 0;
+          {dateOptions.map((opt) => {
+            const active = date === opt.iso;
             return (
               <TouchableOpacity
-                key={d}
+                key={opt.iso}
                 style={[styles.dateChip, active && styles.dateChipActive]}
-                onPress={() => hapticFeedback.selection()}
+                onPress={() => {
+                  setDate(opt.iso);
+                  hapticFeedback.selection();
+                }}
               >
-                <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{d}</Text>
+                <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>
+                  {opt.label}
+                </Text>
+                <Text style={[styles.dateChipSub, active && styles.dateChipSubActive]}>
+                  {opt.sub}
+                </Text>
               </TouchableOpacity>
             );
           })}
@@ -322,9 +379,12 @@ export default function ReservationsModal() {
                 <Text style={[Typography.h2, { color: Colors.textPrimary, marginTop: 6 }]}>
                   {r.partySize} Guests Pass
                 </Text>
-                <Text style={[Typography.bodyMedium, { color: Colors.textSecondary, marginTop: 2 }]}>
-                  📅 {dateStr}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                  <Ionicons name="calendar-outline" size={14} color={Colors.textSecondary} style={{ marginRight: 6 }} />
+                  <Text style={[Typography.bodyMedium, { color: Colors.textSecondary }]}>
+                    {dateStr}
+                  </Text>
+                </View>
                 {r.specialRequests ? (
                   <Text style={[Typography.bodySmall, { color: Colors.textMuted, marginTop: 4 }]}>
                     Notes: {r.specialRequests}
@@ -346,10 +406,21 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Spacing.base,
-    paddingBottom: 60,
   },
-  header: {
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     marginBottom: Spacing.base,
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EEEEEE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: Spacing.sm,
   },
   card: {
     marginBottom: Spacing.base,
@@ -432,6 +503,15 @@ const styles = StyleSheet.create({
   },
   dateChipTextActive: {
     color: '#FFFFFF',
+  },
+  dateChipSub: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  dateChipSubActive: {
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   timeSlotsRow: {
     flexDirection: 'row',

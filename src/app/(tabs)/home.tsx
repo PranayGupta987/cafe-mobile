@@ -6,10 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -17,24 +15,22 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 import { useCartStore } from '@/stores/cartStore';
 import { CafeCard } from '@/components/common/Card';
+import { CafeAsyncImage } from '@/components/common/CafeAsyncImage';
 import { QuantityStepper } from '@/components/specific/QuantityStepper';
 import { VegIndicator } from '@/components/specific/VegIndicator';
 import { FloatingCartBar } from '@/components/specific/FloatingCartBar';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing, Elevation } from '@/constants/dimens';
-import { Typography } from '@/constants/typography';
 import { formatPaise } from '@/utils/currency';
 import { ApiResponse } from '@/types/auth';
 import { MediaAssets } from '@/constants/media';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 const MOOD_FILTERS = [
-  { id: 'all', label: '☕ All Day Brews' },
-  { id: 'pour-over', label: '✨ Reserve Pour-Over' },
-  { id: 'bakery', label: '🥐 Warm Pastries' },
-  { id: 'cold-brew', label: '🧊 Nitro Cold Brew' },
-  { id: 'matcha', label: '🍵 Ceremonial Matcha' },
+  { id: 'all', label: 'All Day Brews', icon: 'cafe-outline' as const },
+  { id: 'pour-over', label: 'Reserve Pour-Over', icon: 'water-outline' as const },
+  { id: 'bakery', label: 'Warm Pastries', icon: 'basket-outline' as const },
+  { id: 'cold-brew', label: 'Nitro Cold Brew', icon: 'snow-outline' as const },
+  { id: 'matcha', label: 'Ceremonial Matcha', icon: 'leaf-outline' as const },
 ];
 
 export default function HomeScreen() {
@@ -120,9 +116,10 @@ export default function HomeScreen() {
                 onPress={() => router.push('/(tabs)/menu')}
               >
                 <View style={styles.storyRing}>
-                  <Image
+                  <CafeAsyncImage
                     source={{ uri: story.image }}
                     style={styles.storyAvatar}
+                    borderRadius={Radius.full}
                     contentFit="cover"
                     transition={200}
                   />
@@ -145,7 +142,7 @@ export default function HomeScreen() {
           <View style={styles.searchIconBox}>
             <Ionicons name="search" size={18} color={Colors.uberGreen} />
           </View>
-          <Text style={styles.searchShortcutText}>Search 'Cold Brew', 'Matcha', 'Pastries'...</Text>
+          <Text style={styles.searchShortcutText}>Search &apos;Cold Brew&apos;, &apos;Matcha&apos;, &apos;Pastries&apos;...</Text>
           <View style={styles.searchShortcutBadge}>
             <Ionicons name="options-outline" size={16} color="#FFFFFF" />
           </View>
@@ -153,9 +150,10 @@ export default function HomeScreen() {
 
         {/* Hero Banner Bento Card (Uber Eats Modern Green & Black Aesthetic) */}
         <View style={styles.heroWrapper}>
-          <Image
+          <CafeAsyncImage
             source={{ uri: MediaAssets.heroes.pourOver }}
             style={styles.heroBackground}
+            borderRadius={Radius.xl}
             contentFit="cover"
             transition={300}
           />
@@ -172,7 +170,7 @@ export default function HomeScreen() {
               </View>
               <View style={styles.prepBadgeHero}>
                 <Ionicons name="flash" size={11} color="#FFD700" />
-                <Text style={styles.prepBadgeHeroText}>⚡ 15-20 min</Text>
+                <Text style={styles.prepBadgeHeroText}>15-20 min</Text>
               </View>
               {cafeProfile?.name ? (
                 <Text style={styles.cafeNameText}>{cafeProfile.name}</Text>
@@ -271,6 +269,12 @@ export default function HomeScreen() {
                     setActiveMood(mood.id);
                   }}
                 >
+                  <Ionicons
+                    name={mood.icon}
+                    size={14}
+                    color={active ? '#FFFFFF' : Colors.textSecondary}
+                    style={{ marginRight: 6 }}
+                  />
                   <Text style={[styles.moodChipText, active && styles.moodChipTextActive]}>
                     {mood.label}
                   </Text>
@@ -360,9 +364,10 @@ export default function HomeScreen() {
                     >
                       {/* Left: Food Photography */}
                       <View style={styles.imageBox}>
-                        <Image
+                        <CafeAsyncImage
                           source={{ uri: imageUrl }}
                           style={styles.itemImage}
+                          borderRadius={Radius.lg}
                           contentFit="cover"
                           transition={250}
                         />
@@ -376,11 +381,11 @@ export default function HomeScreen() {
                         <View style={styles.itemMetaTop}>
                           <View style={styles.ratingBadge}>
                             <Ionicons name="star" size={10} color={Colors.ratingGold} />
-                            <Text style={styles.ratingText}>4.8</Text>
+                            <Text style={styles.ratingText}>{item.rating || '4.8'}</Text>
                           </View>
                           <View style={styles.prepBadge}>
                             <Ionicons name="flash-outline" size={10} color={Colors.uberGreen} />
-                            <Text style={styles.prepText}>15 mins</Text>
+                            <Text style={styles.prepText}>{item.prepTimeMinutes ? `${item.prepTimeMinutes}m` : '15 mins'}</Text>
                           </View>
                           {item.isSpicy ? (
                             <View style={styles.spicyBadge}>

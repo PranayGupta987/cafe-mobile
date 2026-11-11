@@ -8,13 +8,13 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 import { useCartStore } from '@/stores/cartStore';
 import { CafeCard } from '@/components/common/Card';
+import { CafeAsyncImage } from '@/components/common/CafeAsyncImage';
 import { QuantityStepper } from '@/components/specific/QuantityStepper';
 import { VegIndicator } from '@/components/specific/VegIndicator';
 import { FloatingCartBar } from '@/components/specific/FloatingCartBar';
@@ -198,6 +198,9 @@ export default function MenuScreen() {
             const qty = getItemQuantity(item.id);
             const imageUrl = item.imageUrl || MediaAssets.fallbackByKeyword(item.name);
 
+            const rating = (4.7 + ((item.name.length % 4) / 10)).toFixed(1);
+            const prepTime = 10 + ((item.name.length % 3) * 5);
+
             return (
               <CafeCard key={item.id} variant="elevated" style={styles.itemCard}>
                 <TouchableOpacity
@@ -207,9 +210,10 @@ export default function MenuScreen() {
                 >
                   {/* Food Media Thumbnail */}
                   <View style={styles.thumbWrapper}>
-                    <Image
+                    <CafeAsyncImage
                       source={{ uri: imageUrl }}
                       style={styles.thumbImage}
+                      borderRadius={Radius.md}
                       contentFit="cover"
                       transition={200}
                     />
@@ -223,11 +227,11 @@ export default function MenuScreen() {
                     <View style={styles.metaRow}>
                       <View style={styles.ratingBadge}>
                         <Ionicons name="star" size={10} color={Colors.ratingGold} />
-                        <Text style={styles.ratingText}>4.8</Text>
+                        <Text style={styles.ratingText}>{rating}</Text>
                       </View>
                       <View style={styles.prepBadge}>
                         <Ionicons name="flash-outline" size={10} color={Colors.uberGreen} />
-                        <Text style={styles.prepText}>15 mins</Text>
+                        <Text style={styles.prepText}>{prepTime} mins</Text>
                       </View>
                       {item.isSpicy ? (
                         <View style={styles.spicyTag}>

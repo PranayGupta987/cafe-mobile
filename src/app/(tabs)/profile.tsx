@@ -17,7 +17,7 @@ export default function ProfileScreen() {
   const { tableNumber, setTable, clearCart } = useCartStore();
 
   // Loyalty Card Stamps State (Improvement 58)
-  const [stamps, setStamps] = useState(6);
+  const [stamps] = useState(6);
   const totalStamps = 8;
 
   const handleLeaveTable = () => {

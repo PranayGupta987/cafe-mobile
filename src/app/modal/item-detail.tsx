@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
@@ -20,6 +20,7 @@ import { formatPaise } from '@/utils/currency';
 import { useCartStore } from '@/stores/cartStore';
 import { VegIndicator } from '@/components/specific/VegIndicator';
 import { DietaryBadge } from '@/components/specific/DietaryBadge';
+import { CafeAsyncImage } from '@/components/common/CafeAsyncImage';
 import { MediaAssets } from '@/constants/media';
 import { hapticFeedback } from '@/utils/haptics';
 
@@ -27,6 +28,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function ItemDetailModal() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     id: string;
     name: string;
@@ -47,18 +49,43 @@ export default function ItemDetailModal() {
   const isOutOfStock = params.isOutOfStock === 'true';
   const displayImage = params.imageUrl || MediaAssets.fallbackByKeyword(params.name || '');
 
-  // Customization Options
+  const isCoffeeOrBeverage = useMemo(() => {
+    const text = `${params.name || ''} ${params.categoryName || ''}`.toLowerCase();
+    return (
+      text.includes('coffee') ||
+      text.includes('brew') ||
+      text.includes('espresso') ||
+      text.includes('latte') ||
+      text.includes('cappuccino') ||
+      text.includes('cortado') ||
+      text.includes('macchiato') ||
+      text.includes('americano') ||
+      text.includes('mocha') ||
+      text.includes('matcha') ||
+      text.includes('tea') ||
+      text.includes('beverage') ||
+      text.includes('drink') ||
+      text.includes('pour-over')
+    );
+  }, [params.name, params.categoryName]);
+
+  // Beverage Customization Options
   const [selectedSize, setSelectedSize] = useState<'regular' | 'large'>('regular');
   const [selectedMilk, setSelectedMilk] = useState<'standard' | 'oat' | 'almond'>('standard');
   const [espressoShot, setEspressoShot] = useState<'standard' | 'double' | 'ristretto' | 'decaf'>('standard');
   const [sweetness, setSweetness] = useState<'regular' | 'less' | 'zero'>('regular');
+
+  // Food Customization Options
+  const [foodPrep, setFoodPrep] = useState<'toasted' | 'fresh'>('toasted');
+  const [foodFinishing, setFoodFinishing] = useState<'butter' | 'olive_oil' | 'plain'>('butter');
+
   const [notes, setNotes] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [notified, setNotified] = useState(false);
 
   const sizeExtraPaise = selectedSize === 'large' ? 4000 : 0;
-  const milkExtraPaise = selectedMilk === 'oat' ? 3000 : selectedMilk === 'almond' ? 3500 : 0;
-  const shotExtraPaise = espressoShot === 'double' ? 2500 : 0;
+  const milkExtraPaise = isCoffeeOrBeverage ? (selectedMilk === 'oat' ? 3000 : selectedMilk === 'almond' ? 3500 : 0) : 0;
+  const shotExtraPaise = isCoffeeOrBeverage ? (espressoShot === 'double' ? 2500 : 0) : 0;
   const unitPricePaise = basePricePaise + sizeExtraPaise + milkExtraPaise + shotExtraPaise;
   const totalPricePaise = unitPricePaise * quantity;
 
@@ -66,25 +93,31 @@ export default function ItemDetailModal() {
     if (isOutOfStock) return;
     hapticFeedback.success();
 
-    const sizeLabel = selectedSize === 'large' ? 'Large' : 'Regular';
-    const milkLabel = selectedMilk === 'oat' ? 'Oat Milk' : selectedMilk === 'almond' ? 'Almond Milk' : '';
-    const shotLabel = espressoShot === 'double' ? 'Double Shot' : espressoShot === 'ristretto' ? 'Ristretto' : espressoShot === 'decaf' ? 'Decaf' : '';
-    const sweetnessLabel = sweetness === 'less' ? '50% Sweet' : sweetness === 'zero' ? 'Unsweetened' : '';
+    const sizeLabel = selectedSize === 'large' ? (isCoffeeOrBeverage ? 'Large (475ml)' : 'Large Portion') : (isCoffeeOrBeverage ? 'Regular (350ml)' : 'Standard Portion');
 
-    const customNotes = [
-      sizeLabel,
-      milkLabel,
-      shotLabel,
-      sweetnessLabel,
-      notes.trim(),
-    ]
-      .filter(Boolean)
-      .join(' • ');
+    const customNotes = isCoffeeOrBeverage
+      ? [
+          sizeLabel,
+          selectedMilk === 'oat' ? 'Oat Milk' : selectedMilk === 'almond' ? 'Almond Milk' : '',
+          espressoShot === 'double' ? 'Double Shot' : espressoShot === 'ristretto' ? 'Ristretto' : espressoShot === 'decaf' ? 'Decaf' : '',
+          sweetness === 'less' ? '50% Sweet' : sweetness === 'zero' ? 'Unsweetened' : '',
+          notes.trim(),
+        ]
+          .filter(Boolean)
+          .join(' • ')
+      : [
+          sizeLabel,
+          foodPrep === 'toasted' ? 'Warm & Toasted' : 'Ambient Fresh',
+          foodFinishing === 'butter' ? 'Artisan Herb Butter' : foodFinishing === 'olive_oil' ? 'EVOO & Sea Salt' : 'Plain / No Topping',
+          notes.trim(),
+        ]
+          .filter(Boolean)
+          .join(' • ');
 
     for (let i = 0; i < quantity; i++) {
       addItem({
         menuItemId: params.id || `custom-${Date.now()}`,
-        name: `${params.name || 'Café Item'} (${sizeLabel})`,
+        name: `${params.name || 'Café Item'} (${selectedSize === 'large' ? 'Large' : 'Regular'})`,
         pricePaise: unitPricePaise,
         imageUrl: displayImage,
         isVeg,
@@ -106,7 +139,7 @@ export default function ItemDetailModal() {
       <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
         {/* Full Bleed Hero Media */}
         <View style={styles.imageHeader}>
-          <Image
+          <CafeAsyncImage
             source={{ uri: displayImage }}
             style={styles.heroImage}
             contentFit="cover"
@@ -119,7 +152,7 @@ export default function ItemDetailModal() {
 
           {/* Close Button */}
           <TouchableOpacity
-            style={styles.closeButton}
+            style={[styles.closeButton, { top: Math.max(insets.top, 16) + 8 }]}
             onPress={() => router.back()}
             activeOpacity={0.8}
           >
@@ -173,39 +206,62 @@ export default function ItemDetailModal() {
               'Slow steeped for 18 hours using single-origin Ethiopian heirloom beans with tasting notes of bergamot, dark cocoa, and stone fruits.'}
           </Text>
 
-          {/* Flavor Profile Visualizer Badges (Improvement 27) */}
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionHeader}>Flavor Profile & Sensory Notes</Text>
-            <View style={styles.flavorGrid}>
-              <View style={styles.flavorItem}>
-                <Text style={styles.flavorLabel}>Acidity</Text>
-                <Text style={styles.flavorDots}>● ● ○</Text>
-                <Text style={styles.flavorSub}>Bright Citrus</Text>
-              </View>
-              <View style={styles.flavorItem}>
-                <Text style={styles.flavorLabel}>Body</Text>
-                <Text style={styles.flavorDots}>● ● ●</Text>
-                <Text style={styles.flavorSub}>Velvety Full</Text>
-              </View>
-              <View style={styles.flavorItem}>
-                <Text style={styles.flavorLabel}>Roast Level</Text>
-                <Text style={styles.flavorDots}>● ● ○</Text>
-                <Text style={styles.flavorSub}>Medium Craft</Text>
+          {/* Conditional Sensory Notes (Coffee vs Food) */}
+          {isCoffeeOrBeverage ? (
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionHeader}>Flavor Profile & Sensory Notes</Text>
+              <View style={styles.flavorGrid}>
+                <View style={styles.flavorItem}>
+                  <Text style={styles.flavorLabel}>Acidity</Text>
+                  <Text style={styles.flavorDots}>● ● ○</Text>
+                  <Text style={styles.flavorSub}>Bright Citrus</Text>
+                </View>
+                <View style={styles.flavorItem}>
+                  <Text style={styles.flavorLabel}>Body</Text>
+                  <Text style={styles.flavorDots}>● ● ●</Text>
+                  <Text style={styles.flavorSub}>Velvety Full</Text>
+                </View>
+                <View style={styles.flavorItem}>
+                  <Text style={styles.flavorLabel}>Roast Level</Text>
+                  <Text style={styles.flavorDots}>● ● ○</Text>
+                  <Text style={styles.flavorSub}>Medium Craft</Text>
+                </View>
               </View>
             </View>
-          </View>
+          ) : (
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionHeader}>Culinary Craft & Texture</Text>
+              <View style={styles.flavorGrid}>
+                <View style={styles.flavorItem}>
+                  <Text style={styles.flavorLabel}>Crumb / Flake</Text>
+                  <Text style={styles.flavorDots}>● ● ●</Text>
+                  <Text style={styles.flavorSub}>Laminated Crispy</Text>
+                </View>
+                <View style={styles.flavorItem}>
+                  <Text style={styles.flavorLabel}>Warmth</Text>
+                  <Text style={styles.flavorDots}>● ● ○</Text>
+                  <Text style={styles.flavorSub}>Oven Baked Fresh</Text>
+                </View>
+                <View style={styles.flavorItem}>
+                  <Text style={styles.flavorLabel}>Sourcing</Text>
+                  <Text style={styles.flavorDots}>● ● ●</Text>
+                  <Text style={styles.flavorSub}>Organic Flour</Text>
+                </View>
+              </View>
+            </View>
+          )}
 
-          {/* Dietary & Allergen Warning Callout (Improvement 28) */}
+          {/* Dietary & Allergen Warning Callout */}
           <View style={styles.allergenBanner}>
             <Ionicons name="information-circle" size={18} color="#E65100" />
             <Text style={styles.allergenText}>
-              Allergen Note: Prepared in an artisanal roastery handling organic oats, almond dairy alternatives, and hazelnuts.
+              Allergen Note: Prepared in an artisanal kitchen handling organic dairy alternatives, gluten, and nuts.
             </Text>
           </View>
 
-          {/* Size Selector */}
+          {/* Size / Portion Selector */}
           <View style={styles.customSection}>
-            <Text style={styles.sectionHeader}>Cup Size</Text>
+            <Text style={styles.sectionHeader}>{isCoffeeOrBeverage ? 'Cup Size' : 'Portion Size'}</Text>
             <View style={styles.optionsRow}>
               <TouchableOpacity
                 style={[
@@ -223,7 +279,7 @@ export default function ItemDetailModal() {
                     selectedSize === 'regular' && styles.optionTitleActive,
                   ]}
                 >
-                  Regular (350ml)
+                  {isCoffeeOrBeverage ? 'Regular (350ml)' : 'Standard Serving'}
                 </Text>
                 <Text style={styles.optionSubtitle}>Standard</Text>
               </TouchableOpacity>
@@ -244,117 +300,191 @@ export default function ItemDetailModal() {
                     selectedSize === 'large' && styles.optionTitleActive,
                   ]}
                 >
-                  Large (475ml)
+                  {isCoffeeOrBeverage ? 'Large (475ml)' : 'Large Portion'}
                 </Text>
                 <Text style={styles.optionSubtitle}>+₹40</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Espresso Shot Intensity Selector (Improvement 29) */}
-          <View style={styles.customSection}>
-            <Text style={styles.sectionHeader}>Espresso Shot Intensity</Text>
-            <View style={styles.optionsGrid}>
-              {[
-                { id: 'standard', label: 'Standard Single', sub: 'Balanced' },
-                { id: 'double', label: 'Double Shot', sub: '+₹25' },
-                { id: 'ristretto', label: 'Ristretto', sub: 'Short & Sweet' },
-                { id: 'decaf', label: 'Swiss Decaf', sub: '99% Caffeine Free' },
-              ].map((shot) => (
-                <TouchableOpacity
-                  key={shot.id}
-                  style={[
-                    styles.optionPillSmall,
-                    espressoShot === shot.id && styles.optionPillActive,
-                  ]}
-                  onPress={() => {
-                    setEspressoShot(shot.id as any);
-                    hapticFeedback.selection();
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.optionTitleSmall,
-                      espressoShot === shot.id && styles.optionTitleActive,
-                    ]}
-                  >
-                    {shot.label}
-                  </Text>
-                  <Text style={styles.optionSubtitleSmall}>{shot.sub}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+          {/* Conditional Options: Coffee (Espresso Shot, Milk, Sweetness) vs Food (Prep, Finishing) */}
+          {isCoffeeOrBeverage ? (
+            <>
+              {/* Espresso Shot Intensity Selector */}
+              <View style={styles.customSection}>
+                <Text style={styles.sectionHeader}>Espresso Shot Intensity</Text>
+                <View style={styles.optionsGrid}>
+                  {[
+                    { id: 'standard', label: 'Standard Single', sub: 'Balanced' },
+                    { id: 'double', label: 'Double Shot', sub: '+₹25' },
+                    { id: 'ristretto', label: 'Ristretto', sub: 'Short & Sweet' },
+                    { id: 'decaf', label: 'Swiss Decaf', sub: '99% Caffeine Free' },
+                  ].map((shot) => (
+                    <TouchableOpacity
+                      key={shot.id}
+                      style={[
+                        styles.optionPillSmall,
+                        espressoShot === shot.id && styles.optionPillActive,
+                      ]}
+                      onPress={() => {
+                        setEspressoShot(shot.id as any);
+                        hapticFeedback.selection();
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.optionTitleSmall,
+                          espressoShot === shot.id && styles.optionTitleActive,
+                        ]}
+                      >
+                        {shot.label}
+                      </Text>
+                      <Text style={styles.optionSubtitleSmall}>{shot.sub}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
 
-          {/* Milk Alternatives */}
-          <View style={styles.customSection}>
-            <Text style={styles.sectionHeader}>Milk Choice</Text>
-            <View style={styles.optionsRow}>
-              {[
-                { id: 'standard', label: 'Whole Milk', sub: 'Creamy' },
-                { id: 'oat', label: 'Oat Milk', sub: '+₹30' },
-                { id: 'almond', label: 'Almond Milk', sub: '+₹35' },
-              ].map((m) => (
-                <TouchableOpacity
-                  key={m.id}
-                  style={[
-                    styles.optionPill,
-                    selectedMilk === m.id && styles.optionPillActive,
-                  ]}
-                  onPress={() => {
-                    setSelectedMilk(m.id as any);
-                    hapticFeedback.selection();
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.optionTitle,
-                      selectedMilk === m.id && styles.optionTitleActive,
-                    ]}
-                  >
-                    {m.label}
-                  </Text>
-                  <Text style={styles.optionSubtitle}>{m.sub}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+              {/* Milk Alternatives */}
+              <View style={styles.customSection}>
+                <Text style={styles.sectionHeader}>Milk Choice</Text>
+                <View style={styles.optionsRow}>
+                  {[
+                    { id: 'standard', label: 'Whole Milk', sub: 'Creamy' },
+                    { id: 'oat', label: 'Oat Milk', sub: '+₹30' },
+                    { id: 'almond', label: 'Almond Milk', sub: '+₹35' },
+                  ].map((m) => (
+                    <TouchableOpacity
+                      key={m.id}
+                      style={[
+                        styles.optionPill,
+                        selectedMilk === m.id && styles.optionPillActive,
+                      ]}
+                      onPress={() => {
+                        setSelectedMilk(m.id as any);
+                        hapticFeedback.selection();
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.optionTitle,
+                          selectedMilk === m.id && styles.optionTitleActive,
+                        ]}
+                      >
+                        {m.label}
+                      </Text>
+                      <Text style={styles.optionSubtitle}>{m.sub}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
 
-          {/* Sweetness Level */}
-          <View style={styles.customSection}>
-            <Text style={styles.sectionHeader}>Sweetness Preference</Text>
-            <View style={styles.optionsRow}>
-              {[
-                { id: 'regular', label: '100% Regular', sub: 'Classic' },
-                { id: 'less', label: '50% Less Sweet', sub: 'Subtle' },
-                { id: 'zero', label: '0% Unsweetened', sub: 'Pure' },
-              ].map((s) => (
-                <TouchableOpacity
-                  key={s.id}
-                  style={[
-                    styles.optionPill,
-                    sweetness === s.id && styles.optionPillActive,
-                  ]}
-                  onPress={() => {
-                    setSweetness(s.id as any);
-                    hapticFeedback.selection();
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.optionTitle,
-                      sweetness === s.id && styles.optionTitleActive,
-                    ]}
-                  >
-                    {s.label}
-                  </Text>
-                  <Text style={styles.optionSubtitle}>{s.sub}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+              {/* Sweetness Level */}
+              <View style={styles.customSection}>
+                <Text style={styles.sectionHeader}>Sweetness Preference</Text>
+                <View style={styles.optionsRow}>
+                  {[
+                    { id: 'regular', label: '100% Regular', sub: 'Classic' },
+                    { id: 'less', label: '50% Less Sweet', sub: 'Subtle' },
+                    { id: 'zero', label: '0% Unsweetened', sub: 'Pure' },
+                  ].map((s) => (
+                    <TouchableOpacity
+                      key={s.id}
+                      style={[
+                        styles.optionPill,
+                        sweetness === s.id && styles.optionPillActive,
+                      ]}
+                      onPress={() => {
+                        setSweetness(s.id as any);
+                        hapticFeedback.selection();
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.optionTitle,
+                          sweetness === s.id && styles.optionTitleActive,
+                        ]}
+                      >
+                        {s.label}
+                      </Text>
+                      <Text style={styles.optionSubtitle}>{s.sub}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </>
+          ) : (
+            <>
+              {/* Preparation Style */}
+              <View style={styles.customSection}>
+                <Text style={styles.sectionHeader}>Preparation Style</Text>
+                <View style={styles.optionsRow}>
+                  {[
+                    { id: 'toasted', label: 'Warm & Toasted', sub: 'Recommended' },
+                    { id: 'fresh', label: 'Ambient / As-is', sub: 'Soft texture' },
+                  ].map((p) => (
+                    <TouchableOpacity
+                      key={p.id}
+                      style={[
+                        styles.optionPill,
+                        foodPrep === p.id && styles.optionPillActive,
+                      ]}
+                      onPress={() => {
+                        setFoodPrep(p.id as any);
+                        hapticFeedback.selection();
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.optionTitle,
+                          foodPrep === p.id && styles.optionTitleActive,
+                        ]}
+                      >
+                        {p.label}
+                      </Text>
+                      <Text style={styles.optionSubtitle}>{p.sub}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
 
-          {/* Pastry Warmth & Pairing Suggestion (Improvement 30) */}
+              {/* Chef's Finishing */}
+              <View style={styles.customSection}>
+                <Text style={styles.sectionHeader}>Chef&apos;s Finishing Touch</Text>
+                <View style={styles.optionsRow}>
+                  {[
+                    { id: 'butter', label: 'Herb Butter', sub: 'Rich' },
+                    { id: 'olive_oil', label: 'EVOO & Sea Salt', sub: 'Artisan' },
+                    { id: 'plain', label: 'Plain', sub: 'Natural' },
+                  ].map((f) => (
+                    <TouchableOpacity
+                      key={f.id}
+                      style={[
+                        styles.optionPill,
+                        foodFinishing === f.id && styles.optionPillActive,
+                      ]}
+                      onPress={() => {
+                        setFoodFinishing(f.id as any);
+                        hapticFeedback.selection();
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.optionTitle,
+                          foodFinishing === f.id && styles.optionTitleActive,
+                        ]}
+                      >
+                        {f.label}
+                      </Text>
+                      <Text style={styles.optionSubtitle}>{f.sub}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* Barista / Chef Pairing Suggestion */}
           <View style={styles.pairingCard}>
             <View style={styles.pairingLeft}>
               <Text style={styles.pairingBadge}>BARISTA PAIRING</Text>
@@ -366,12 +496,12 @@ export default function ItemDetailModal() {
             <Ionicons name="sparkles" size={24} color="#06C167" />
           </View>
 
-          {/* Barista Notes */}
+          {/* Special Instructions */}
           <View style={styles.customSection}>
-            <Text style={styles.sectionHeader}>Special Barista Instructions</Text>
+            <Text style={styles.sectionHeader}>{isCoffeeOrBeverage ? 'Special Barista Instructions' : 'Special Kitchen Instructions'}</Text>
             <TextInput
               style={styles.textInput}
-              placeholder="e.g. Extra hot, splash of vanilla, no foam..."
+              placeholder={isCoffeeOrBeverage ? "e.g. Extra hot, splash of vanilla, no foam..." : "e.g. Dressing on side, extra crispy, allergy info..."}
               placeholderTextColor={Colors.textMuted}
               value={notes}
               onChangeText={setNotes}
@@ -382,7 +512,7 @@ export default function ItemDetailModal() {
       </ScrollView>
 
       {/* Sticky Bottom Add To Cart CTA Bar */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) + Spacing.sm }]}>
         {isOutOfStock ? (
           <TouchableOpacity
             style={[styles.notifyButton, notified && styles.notifyButtonDone]}

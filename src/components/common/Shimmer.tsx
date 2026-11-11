@@ -12,7 +12,7 @@ import { Radius } from '@/constants/dimens';
 
 interface ShimmerProps {
   width: number | string;
-  height: number;
+  height: number | string;
   radius?: number;
   style?: ViewStyle;
 }

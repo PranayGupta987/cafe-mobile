@@ -13,8 +13,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 import { useSocket } from '@/hooks/useSocket';
-import { CafeCard } from '@/components/common/Card';
-import { StatusBadge } from '@/components/specific/StatusBadge';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing, Elevation } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
@@ -27,6 +25,14 @@ export default function KitchenScreen() {
   const [filter, setFilter] = useState<'ACTIVE' | 'PLACED' | 'PREPARING' | 'READY'>('ACTIVE');
   const [isCompact, setIsCompact] = useState(false);
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Fetch kitchen orders
   const { data: orders, isLoading, refetch, isRefetching } = useQuery({
@@ -80,7 +86,7 @@ export default function KitchenScreen() {
   };
 
   const getUrgencyConfig = (createdAt: string) => {
-    const elapsedMinutes = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
+    const elapsedMinutes = Math.floor((currentTime - new Date(createdAt).getTime()) / 60000);
     if (elapsedMinutes > 15) {
       return {
         bg: '#FFEBEE',

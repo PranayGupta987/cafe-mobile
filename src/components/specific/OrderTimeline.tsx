@@ -25,19 +25,10 @@ const STAGES = [
 ];
 
 export const OrderTimeline: React.FC<OrderTimelineProps> = ({ status, tableNumber }) => {
-  if (status === 'CANCELLED') {
-    return (
-      <View style={styles.cancelledContainer}>
-        <Ionicons name="close-circle" size={24} color={Colors.error} />
-        <Text style={styles.cancelledText}>This order was cancelled</Text>
-      </View>
-    );
-  }
-
   const currentStageIndex = STAGES.findIndex((s) => s.key === status);
   const activeIndex = currentStageIndex >= 0 ? currentStageIndex : 0;
 
-  // Pulse animation for active node
+  // Pulse animation for active node (always called unconditionally at top of component)
   const pulseScale = useSharedValue(1);
   const pulseOpacity = useSharedValue(0.6);
 
@@ -58,12 +49,21 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({ status, tableNumbe
       -1,
       true
     );
-  }, []);
+  }, [pulseScale, pulseOpacity]);
 
   const animatedPulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
     opacity: pulseOpacity.value,
   }));
+
+  if (status === 'CANCELLED') {
+    return (
+      <View style={styles.cancelledContainer}>
+        <Ionicons name="close-circle" size={24} color={Colors.error} />
+        <Text style={styles.cancelledText}>This order was cancelled</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

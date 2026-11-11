@@ -14,8 +14,6 @@ import * as Haptics from 'expo-haptics';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 import { useCartStore } from '@/stores/cartStore';
-import { CafeCard } from '@/components/common/Card';
-import { CafeButton } from '@/components/common/Button';
 import { FloatingCartBar } from '@/components/specific/FloatingCartBar';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing, Elevation } from '@/constants/dimens';

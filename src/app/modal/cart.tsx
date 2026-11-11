@@ -6,16 +6,16 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useCartStore } from '@/stores/cartStore';
 import { apiClient } from '@/api/client';
 import { CafeCard } from '@/components/common/Card';
 import { CafeButton } from '@/components/common/Button';
+import { CafeAsyncImage } from '@/components/common/CafeAsyncImage';
 import { QuantityStepper } from '@/components/specific/QuantityStepper';
 import { VegIndicator } from '@/components/specific/VegIndicator';
 import { Colors } from '@/constants/colors';
@@ -60,6 +60,7 @@ const UPSELL_ITEMS = [
 
 export default function CartModal() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const {
     items,
     tableId,
@@ -69,14 +70,11 @@ export default function CartModal() {
     addItem,
     incrementItem,
     decrementItem,
-    removeItem,
     clearCart,
     applyOffer,
     removeOffer,
-    setSpecialInstructions,
     getSubtotalPaise,
     getDiscountPaise,
-    getSubtotalAfterDiscountPaise,
     getGstPaise,
     getTotalPaise,
   } = useCartStore();
@@ -90,7 +88,6 @@ export default function CartModal() {
 
   const subtotal = getSubtotalPaise();
   const discount = getDiscountPaise();
-  const subtotalAfterDiscount = getSubtotalAfterDiscountPaise();
   const gst = getGstPaise();
   const grandTotal = getTotalPaise() + selectedTipPaise;
 
@@ -167,7 +164,7 @@ export default function CartModal() {
       hapticFeedback.success();
       setPromoInput('');
       Alert.alert('Success 🎉', `Coupon ${matched.code} applied!`);
-    } catch (e: any) {
+    } catch {
       hapticFeedback.error();
       Alert.alert('Error', 'Failed to validate promo code');
     } finally {
@@ -274,9 +271,12 @@ export default function CartModal() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Top Header with Clear Cart Action (Improvement 38) */}
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 12) }]}>
+      {/* Top Header with Close & Clear Actions */}
       <View style={styles.topHeaderBar}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+          <Ionicons name="close" size={22} color={Colors.textPrimary} />
+        </TouchableOpacity>
         <Text style={[Typography.h3, { color: Colors.textPrimary }]}>Your Basket</Text>
         <TouchableOpacity onPress={handleClearCartPrompt} style={styles.clearBtn}>
           <Ionicons name="trash-outline" size={18} color={Colors.error} />
@@ -347,9 +347,10 @@ export default function CartModal() {
             const img = item.imageUrl || MediaAssets.fallbackByKeyword(item.name);
             return (
               <View key={item.menuItemId} style={styles.cartItemRow}>
-                <Image
+                <CafeAsyncImage
                   source={{ uri: img }}
                   style={styles.itemThumb}
+                  borderRadius={Radius.md}
                   contentFit="cover"
                   transition={200}
                 />
@@ -388,7 +389,12 @@ export default function CartModal() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.upsellScroll}>
             {UPSELL_ITEMS.map((upsell) => (
               <View key={upsell.id} style={styles.upsellCard}>
-                <Image source={{ uri: upsell.image }} style={styles.upsellImage} contentFit="cover" />
+                <CafeAsyncImage
+                  source={{ uri: upsell.image }}
+                  style={styles.upsellImage}
+                  borderRadius={Radius.md}
+                  contentFit="cover"
+                />
                 <Text style={styles.upsellName} numberOfLines={1}>{upsell.name}</Text>
                 <Text style={styles.upsellPrice}>{formatPaise(upsell.pricePaise)}</Text>
                 <TouchableOpacity
@@ -528,7 +534,7 @@ export default function CartModal() {
       </ScrollView>
 
       {/* Checkout Footer */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + Spacing.xs }]}>
         <View style={styles.footerSummary}>
           <Text style={styles.footerItemCount}>{items.reduce((s, i) => s + i.quantity, 0)} Items • {fulfillmentMode}</Text>
           <Text style={styles.footerTotal}>{formatPaise(grandTotal)}</Text>
@@ -558,6 +564,14 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: Spacing.xs,
     backgroundColor: '#FFFFFF',
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F0F0F0',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   clearBtn: {
     flexDirection: 'row',

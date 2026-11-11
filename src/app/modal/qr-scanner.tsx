@@ -26,7 +26,7 @@ export default function QrScannerModal() {
     if (!permission?.granted) {
       requestPermission();
     }
-  }, [permission]);
+  }, [permission, requestPermission]);
 
   const handleTableLookup = async (tokenOrNumber: string) => {
     if (!tokenOrNumber.trim()) return;
@@ -55,7 +55,7 @@ export default function QrScannerModal() {
         hapticFeedback.error();
         Alert.alert('Table Not Found', 'Could not locate table with this QR code or number.');
       }
-    } catch (e) {
+    } catch {
       hapticFeedback.error();
       Alert.alert('Error', 'Invalid table reference or network error');
     } finally {

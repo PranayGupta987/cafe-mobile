@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeInDown,
   FadeOutDown,
@@ -12,7 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
-import { Radius, Spacing, Elevation } from '@/constants/dimens';
+import { Radius, Spacing } from '@/constants/dimens';
 import { formatPaise } from '@/utils/currency';
 
 interface FloatingCartBarProps {
@@ -28,6 +29,7 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
   onPress,
   tableNumber,
 }) => {
+  const insets = useSafeAreaInsets();
   const badgeScale = useSharedValue(1);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
         withSpring(1, { damping: 7 })
       );
     }
-  }, [totalItems]);
+  }, [totalItems, badgeScale]);
 
   const animatedBadgeStyle = useAnimatedStyle(() => ({
     transform: [{ scale: badgeScale.value }],
@@ -54,7 +56,10 @@ export const FloatingCartBar: React.FC<FloatingCartBarProps> = ({
     <Animated.View
       entering={FadeInDown.springify().damping(15)}
       exiting={FadeOutDown.duration(200)}
-      style={styles.wrapper}
+      style={[
+        styles.wrapper,
+        { bottom: Math.max(insets.bottom, 12) + 64 },
+      ]}
     >
       <TouchableOpacity
         activeOpacity={0.92}

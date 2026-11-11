@@ -43,21 +43,21 @@ export default function RootLayout() {
               name="modal/cart"
               options={{
                 presentation: 'modal',
-                title: 'My Cart',
+                headerShown: false,
               }}
             />
             <Stack.Screen
               name="modal/qr-scanner"
               options={{
                 presentation: 'modal',
-                title: 'Scan Table QR',
+                headerShown: false,
               }}
             />
             <Stack.Screen
               name="modal/reservations"
               options={{
                 presentation: 'modal',
-                title: 'Book a Table',
+                headerShown: false,
               }}
             />
             <Stack.Screen

@@ -28,7 +28,7 @@ export default function Index() {
 
     const timer = setTimeout(determineRoute, 600);
     return () => clearTimeout(timer);
-  }, []);
+  }, [checkAuth, router]);
 
   return (
     <View style={styles.container}>
