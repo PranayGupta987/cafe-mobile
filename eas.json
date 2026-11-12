@@ -14,14 +14,22 @@
       "android": {
         "buildType": "apk"
       },
-      "channel": "preview"
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "170081666392-8qgvmpcf6peg7th1sl34a5dindvigoca.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "170081666392-8qgvmpcf6peg7th1sl34a5dindvigoca.apps.googleusercontent.com"
+      }
     },
     "production": {
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
       },
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "170081666392-8qgvmpcf6peg7th1sl34a5dindvigoca.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "170081666392-8qgvmpcf6peg7th1sl34a5dindvigoca.apps.googleusercontent.com"
+      }
     }
   },
   "submit": {
