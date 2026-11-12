@@ -1,0 +1,218 @@
+<svg width="1230" height="852" viewBox="0 0 1230 852" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Cliphs -->
+    <clipPath id="screenOrdersClip">
+      <rect x="0" y="0" width="390" height="852" rx="44" fill="#F8F5F0"/>
+    </clipPath>
+    <clipPath id="screenOffersClip">
+      <rect x="420" y="0" width="390" height="852" rx="44" fill="#F8F5F0"/>
+    </clipPath>
+    <clipPath id="screenProfileClip">
+      <rect x="840" y="0" width="390" height="852" rx="44" fill="#F8F5F0"/>
+    </clipPath>
+  </defs>
+
+  <!-- ================= SCREEN 1: ORDERS & LIVE TRACKING ================= -->
+  <g clip-path="url(#screenOrdersClip)">
+    <rect x="0" y="0" width="390" height="852" fill="#F8F5F0"/>
+    <circle cx="195" cy="21" r="7" fill="#000000"/>
+    <text x="24" y="25" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="700">09:41</text>
+    <text x="366" y="25" text-anchor="end" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">5G  ●●●  100%</text>
+
+    <!-- App Bar -->
+    <g transform="translate(20, 52)">
+      <rect x="0" y="0" width="134" height="18" rx="9" fill="#CFE9D2"/>
+      <text x="67" y="12" text-anchor="middle" fill="#1C3B22" font-family="Plus Jakarta Sans, sans-serif" font-size="8" font-weight="800">LIVE ROASTERY TRACKING</text>
+      <text x="0" y="38" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="20" font-weight="800">Orders &amp; History</text>
+    </g>
+
+    <!-- Filter Tabs -->
+    <g transform="translate(20, 108)">
+      <rect x="0" y="0" width="112" height="34" rx="10" fill="#1C3B22"/>
+      <text x="56" y="21" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="700">All (4)</text>
+
+      <rect x="120" y="0" width="112" height="34" rx="10" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.08"/>
+      <text x="176" y="21" text-anchor="middle" fill="#5A554E" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="600">Active (1)</text>
+
+      <rect x="240" y="0" width="110" height="34" rx="10" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.08"/>
+      <text x="295" y="21" text-anchor="middle" fill="#5A554E" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="600">Served</text>
+    </g>
+
+    <!-- Order Card 1 (Active Brewing) -->
+    <g transform="translate(20, 160)">
+      <rect x="0" y="0" width="350" height="230" rx="20" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.06"/>
+      <text x="16" y="28" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="16" font-weight="800">Order #418</text>
+      <text x="16" y="44" fill="#5A554E" font-family="Plus Jakarta Sans, sans-serif" font-size="11">Today, 09:32 AM • Table 04</text>
+
+      <rect x="240" y="14" width="94" height="22" rx="11" fill="#F6E5D4"/>
+      <text x="287" y="28" text-anchor="middle" fill="#855325" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="800">BREWING V60</text>
+
+      <!-- Brewing Timeline -->
+      <line x1="20" y1="70" x2="330" y2="70" stroke="#CFE9D2" stroke-width="3"/>
+      <circle cx="20" cy="70" r="6" fill="#1C3B22"/>
+      <circle cx="120" cy="70" r="6" fill="#1C3B22"/>
+      <circle cx="220" cy="70" r="4" fill="#8E8B85"/>
+      <circle cx="330" cy="70" r="4" fill="#8E8B85"/>
+      <text x="20" y="90" fill="#1C3B22" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">Pouring 94°C Water (Bloom)</text>
+
+      <!-- Items Box -->
+      <rect x="16" y="104" width="318" height="64" rx="12" fill="#F1ECE1"/>
+      <text x="28" y="126" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="12" font-weight="700">1× Geisha Panama V60</text>
+      <text x="322" y="126" text-anchor="end" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="12" font-weight="800">₹380</text>
+      <text x="28" y="150" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="12" font-weight="700">1× Warm Almond Viennoiserie</text>
+      <text x="322" y="150" text-anchor="end" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="12" font-weight="800">₹180</text>
+
+      <!-- Footer -->
+      <line x1="16" y1="184" x2="334" y2="184" stroke="#000000" stroke-opacity="0.06"/>
+      <text x="16" y="206" fill="#5A554E" font-family="Plus Jakarta Sans, sans-serif" font-size="10">Total Paid:</text>
+      <text x="70" y="207" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="15" font-weight="800">₹560</text>
+
+      <rect x="236" y="190" width="98" height="26" rx="13" fill="#CFE9D2"/>
+      <text x="285" y="206" text-anchor="middle" fill="#1C3B22" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="800">Live Status →</text>
+    </g>
+
+    <!-- Order Card 2 (Served) -->
+    <g transform="translate(20, 406)">
+      <rect x="0" y="0" width="350" height="170" rx="20" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.06"/>
+      <text x="16" y="28" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="16" font-weight="800">Order #392</text>
+      <text x="16" y="44" fill="#5A554E" font-family="Plus Jakarta Sans, sans-serif" font-size="11">Yesterday, 04:15 PM</text>
+
+      <rect x="264" y="14" width="70" height="22" rx="11" fill="#CFE9D2"/>
+      <text x="299" y="28" text-anchor="middle" fill="#1C3B22" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="800">SERVED</text>
+
+      <rect x="16" y="58" width="318" height="42" rx="12" fill="#F1ECE1"/>
+      <text x="28" y="82" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="12" font-weight="700">2× Spanish Cortado (Oat Milk)</text>
+      <text x="322" y="82" text-anchor="end" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="12" font-weight="800">₹520</text>
+
+      <line x1="16" y1="116" x2="334" y2="116" stroke="#000000" stroke-opacity="0.06"/>
+      <text x="16" y="142" fill="#E5A93C" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="700">★ 5.0 Rated</text>
+
+      <rect x="246" y="128" width="88" height="26" rx="13" fill="#CFE9D2"/>
+      <text x="290" y="144" text-anchor="middle" fill="#1C3B22" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="800">Reorder ☕</text>
+    </g>
+  </g>
+
+  <!-- ================= SCREEN 2: MEMBER REWARDS & VOUCHERS ================= -->
+  <g clip-path="url(#screenOffersClip)">
+    <rect x="420" y="0" width="390" height="852" fill="#F8F5F0"/>
+    <circle cx="615" cy="21" r="7" fill="#000000"/>
+    <text x="444" y="25" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="700">09:41</text>
+    <text x="786" y="25" text-anchor="end" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">5G  ●●●  100%</text>
+
+    <!-- App Bar -->
+    <g transform="translate(440, 52)">
+      <rect x="0" y="0" width="134" height="18" rx="9" fill="#CFE9D2"/>
+      <text x="67" y="12" text-anchor="middle" fill="#1C3B22" font-family="Plus Jakarta Sans, sans-serif" font-size="8" font-weight="800">KYOTO MEMBER REWARDS</text>
+      <text x="0" y="38" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="20" font-weight="800">Exclusive Vouchers</text>
+    </g>
+
+    <!-- Perforated Voucher 1 -->
+    <g transform="translate(440, 114)">
+      <rect x="0" y="0" width="350" height="260" rx="20" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.06"/>
+      <!-- Media Banner placeholder -->
+      <rect x="0" y="0" width="350" height="120" rx="20" fill="#EAE3D5"/>
+      <rect x="254" y="12" width="84" height="24" rx="12" fill="#1D1B16" fill-opacity="0.85"/>
+      <text x="296" y="27" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="800">25% OFF</text>
+
+      <!-- Perforation Concaves -->
+      <circle cx="0" cy="120" r="8" fill="#F8F5F0" stroke="#000000" stroke-opacity="0.06"/>
+      <circle cx="350" cy="120" r="8" fill="#F8F5F0" stroke="#000000" stroke-opacity="0.06"/>
+
+      <!-- Body -->
+      <rect x="16" y="136" width="76" height="20" rx="6" fill="#CFE9D2"/>
+      <text x="54" y="150" text-anchor="middle" fill="#1C3B22" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="800">KYOTO25</text>
+      <text x="334" y="150" text-anchor="end" fill="#855325" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="600">Min: ₹300</text>
+
+      <text x="16" y="178" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="15" font-weight="800">Kyoto Roastery Courtesy Pass</text>
+      <text x="16" y="196" fill="#5A554E" font-family="Plus Jakarta Sans, sans-serif" font-size="11">Enjoy 25% off all single-origin V60 pour-overs and cold steeps.</text>
+
+      <line x1="16" y1="216" x2="334" y2="216" stroke="#000000" stroke-opacity="0.08" stroke-dasharray="4 4"/>
+
+      <text x="16" y="238" fill="#1C3B22" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">✓ Authentic Perk</text>
+      <rect x="246" y="224" width="88" height="26" rx="13" fill="#1C3B22"/>
+      <text x="290" y="240" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="800">Apply Code</text>
+    </g>
+
+    <!-- Perforated Voucher 2 -->
+    <g transform="translate(440, 394)">
+      <rect x="0" y="0" width="350" height="260" rx="20" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.06"/>
+      <rect x="0" y="0" width="350" height="120" rx="20" fill="#DCD5C8"/>
+      <rect x="254" y="12" width="84" height="24" rx="12" fill="#1D1B16" fill-opacity="0.85"/>
+      <text x="296" y="27" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="800">₹100 OFF</text>
+
+      <circle cx="0" cy="120" r="8" fill="#F8F5F0" stroke="#000000" stroke-opacity="0.06"/>
+      <circle cx="350" cy="120" r="8" fill="#F8F5F0" stroke="#000000" stroke-opacity="0.06"/>
+
+      <rect x="16" y="136" width="94" height="20" rx="6" fill="#CFE9D2"/>
+      <text x="63" y="150" text-anchor="middle" fill="#1C3B22" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="800">MORNING100</text>
+      <text x="334" y="150" text-anchor="end" fill="#855325" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="600">Min: ₹400</text>
+
+      <text x="16" y="178" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="15" font-weight="800">Artisan Viennoiserie Morning Perk</text>
+      <text x="16" y="196" fill="#5A554E" font-family="Plus Jakarta Sans, sans-serif" font-size="11">Flat ₹100 reduction on any freshly baked pastry paired with coffee.</text>
+
+      <line x1="16" y1="216" x2="334" y2="216" stroke="#000000" stroke-opacity="0.08" stroke-dasharray="4 4"/>
+
+      <text x="16" y="238" fill="#1C3B22" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">✓ Authentic Perk</text>
+      <rect x="246" y="224" width="88" height="26" rx="13" fill="#1C3B22"/>
+      <text x="290" y="240" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="800">Apply Code</text>
+    </g>
+  </g>
+
+  <!-- ================= SCREEN 3: PROFILE & LOYALTY STAMPS ================= -->
+  <g clip-path="url(#screenProfileClip)">
+    <rect x="840" y="0" width="390" height="852" fill="#F8F5F0"/>
+    <circle cx="1035" cy="21" r="7" fill="#000000"/>
+    <text x="864" y="25" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="700">09:41</text>
+    <text x="1206" y="25" text-anchor="end" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">5G  ●●●  100%</text>
+
+    <!-- App Bar -->
+    <g transform="translate(860, 52)">
+      <rect x="0" y="0" width="134" height="18" rx="9" fill="#CFE9D2"/>
+      <text x="67" y="12" text-anchor="middle" fill="#1C3B22" font-family="Plus Jakarta Sans, sans-serif" font-size="8" font-weight="800">KYOTO RESERVE MEMBER</text>
+      <text x="0" y="38" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="20" font-weight="800">Guest Profile</text>
+    </g>
+
+    <!-- Profile Hero Card -->
+    <g transform="translate(860, 114)">
+      <rect x="0" y="0" width="350" height="170" rx="20" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.06"/>
+      <rect x="0" y="0" width="350" height="80" rx="20" fill="#C8C0B2"/>
+
+      <circle cx="175" cy="80" r="34" fill="#1C3B22" stroke="#FFFFFF" stroke-width="3"/>
+      <text x="175" y="87" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="18" font-weight="800">KG</text>
+
+      <text x="175" y="130" text-anchor="middle" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="16" font-weight="800">Pranay Gupta</text>
+      <text x="175" y="146" text-anchor="middle" fill="#5A554E" font-family="Plus Jakarta Sans, sans-serif" font-size="11">pranay@kyotocraft.jp</text>
+    </g>
+
+    <!-- Loyalty Stamp Card -->
+    <g transform="translate(860, 300)">
+      <rect x="0" y="0" width="350" height="140" rx="20" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.06"/>
+      <text x="16" y="26" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="13" font-weight="800">Specialty Brew Stamp Card</text>
+      <rect x="238" y="12" width="96" height="20" rx="10" fill="#F6E5D4"/>
+      <text x="286" y="25" text-anchor="middle" fill="#855325" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="700">2 Left for Free</text>
+      <text x="16" y="44" fill="#5A554E" font-family="Plus Jakarta Sans, sans-serif" font-size="11">6 of 8 stamps collected</text>
+
+      <!-- Stamp row 1 -->
+      <g transform="translate(16, 60)">
+        <circle cx="20" cy="20" r="18" fill="#1C3B22"/><text x="20" y="24" text-anchor="middle" fill="#FFFFFF" font-size="12">☕</text>
+        <circle cx="64" cy="20" r="18" fill="#1C3B22"/><text x="64" y="24" text-anchor="middle" fill="#FFFFFF" font-size="12">☕</text>
+        <circle cx="108" cy="20" r="18" fill="#1C3B22"/><text x="108" y="24" text-anchor="middle" fill="#FFFFFF" font-size="12">☕</text>
+        <circle cx="152" cy="20" r="18" fill="#1C3B22"/><text x="152" y="24" text-anchor="middle" fill="#FFFFFF" font-size="12">☕</text>
+        <circle cx="196" cy="20" r="18" fill="#1C3B22"/><text x="196" y="24" text-anchor="middle" fill="#FFFFFF" font-size="12">☕</text>
+        <circle cx="240" cy="20" r="18" fill="#1C3B22"/><text x="240" y="24" text-anchor="middle" fill="#FFFFFF" font-size="12">☕</text>
+        <circle cx="284" cy="20" r="18" fill="#F1ECE1"/><text x="284" y="24" text-anchor="middle" fill="#8E8B85" font-size="12">○</text>
+        <circle cx="328" cy="20" r="18" fill="#855325"/><text x="328" y="24" text-anchor="middle" fill="#FFFFFF" font-size="12">🎁</text>
+      </g>
+    </g>
+
+    <!-- Table Reservations Card -->
+    <g transform="translate(860, 456)">
+      <rect x="0" y="0" width="350" height="70" rx="16" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.06"/>
+      <circle cx="35" cy="35" r="18" fill="#CFE9D2"/>
+      <text x="35" y="40" text-anchor="middle" fill="#1C3B22" font-size="14">📅</text>
+      <text x="66" y="30" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="13" font-weight="800">Floorplan &amp; Table Reservations</text>
+      <text x="66" y="48" fill="#5A554E" font-family="Plus Jakarta Sans, sans-serif" font-size="11">Reserve window booths &amp; split bills</text>
+      <text x="326" y="38" text-anchor="end" fill="#8E8B85" font-family="Plus Jakarta Sans, sans-serif" font-size="14">›</text>
+    </g>
+  </g>
+</svg>

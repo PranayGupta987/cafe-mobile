@@ -4,37 +4,54 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  Modal,
+  Platform,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 import { useSocket } from '@/hooks/useSocket';
 import { useCartStore } from '@/stores/cartStore';
-import { CafeCard } from '@/components/common/Card';
-import { CafeButton } from '@/components/common/Button';
 import { StatusBadge } from '@/components/specific/StatusBadge';
 import { OrderTimeline } from '@/components/specific/OrderTimeline';
-import { Colors } from '@/constants/colors';
-import { Radius, Spacing, Elevation } from '@/constants/dimens';
-import { Typography } from '@/constants/typography';
+import { CafeAsyncImage } from '@/components/common/CafeAsyncImage';
+import { Radius } from '@/constants/dimens';
 import { formatPaise } from '@/utils/currency';
 import { ApiResponse } from '@/types/auth';
-import { hapticFeedback } from '@/utils/haptics';
+import { MediaAssets } from '@/constants/media';
+
+// Android MD3 + Kyoto Minimalist Color Tokens
+const KyotoMD3 = {
+  surface: '#F8F5F0',
+  surfaceContainer: '#F1ECE1',
+  surfaceContainerHigh: '#EAE3D5',
+  surfaceBright: '#FFFFFF',
+  onSurface: '#1D1B16',
+  onSurfaceVariant: '#5A554E',
+  outline: '#8E8B85',
+  outlineSubtle: 'rgba(0, 0, 0, 0.06)',
+  primary: '#1C3B22',
+  primaryContainer: '#CFE9D2',
+  onPrimary: '#FFFFFF',
+  secondary: '#855325',
+  ratingStar: '#E5A93C',
+};
 
 export default function OrdersScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { socket } = useSocket();
   const addItem = useCartStore((state) => state.addItem);
 
   const [filter, setFilter] = useState<'ALL' | 'ACTIVE' | 'COMPLETED'>('ALL');
-  const [selectedReceipt, setSelectedReceipt] = useState<any | null>(null);
   const [ratedOrders, setRatedOrders] = useState<Record<string, number>>({});
 
   // Fetch orders
@@ -49,50 +66,40 @@ export default function OrdersScreen() {
   // Listen to realtime order updates
   useEffect(() => {
     if (!socket) return;
-
     const handleStatusUpdate = () => {
       queryClient.invalidateQueries({ queryKey: ['customer-orders'] });
     };
-
     socket.on('order:status_update', handleStatusUpdate);
-
     return () => {
       socket.off('order:status_update', handleStatusUpdate);
     };
   }, [socket, queryClient]);
 
-  // 1-Tap Re-Order Shortcut (Improvement 41)
   const handleReorder = (order: any) => {
-    hapticFeedback.tap();
     const items = order.items || [];
     items.forEach((item: any) => {
       addItem({
         menuItemId: item.menuItemId || item.id,
         name: item.menuItem?.name || item.name || 'Artisan Coffee',
         pricePaise: item.pricePaise || Math.round(item.subtotalPaise / (item.quantity || 1)),
+        imageUrl: item.menuItem?.imageUrl || MediaAssets.fallbackByKeyword(item.menuItem?.name || ''),
         isVeg: item.menuItem?.isVeg ?? true,
       });
     });
 
-    hapticFeedback.success();
     Alert.alert(
-      'Items Added to Basket! ☕',
+      'Items Added to Basket ☕',
       `Re-added ${items.length} items from Order #${order.orderNumber}.`,
       [
         { text: 'Keep Browsing', style: 'cancel' },
-        { text: 'Go to Basket', onPress: () => router.push('/modal/cart') },
+        { text: 'Open Basket', onPress: () => router.push('/modal/cart') },
       ]
     );
   };
 
-  // Barista Rating Feedback (Improvement 43)
   const handleRateOrder = (orderId: string, rating: number) => {
-    hapticFeedback.selection();
-    setRatedOrders((prev) => ({
-      ...prev,
-      [orderId]: rating,
-    }));
-    Alert.alert('Thank You! ⭐', 'Your appreciation was shared with our master baristas.');
+    setRatedOrders((prev) => ({ ...prev, [orderId]: rating }));
+    Alert.alert('Thank You! ⭐', 'Your appreciation was shared with our master roasters.');
   };
 
   const filteredOrders = (orders || []).filter((order) => {
@@ -104,42 +111,74 @@ export default function OrdersScreen() {
 
   return (
     <View style={styles.container}>
+      <StatusBar style="dark" />
+
+      {/* Top Header Bar */}
+      <View style={[styles.topAppBar, { paddingTop: insets.top + (Platform.OS === 'android' ? 8 : 4) }]}>
+        <View style={styles.headerTitleCol}>
+          <View style={styles.tableChip}>
+            <View style={styles.tableDot} />
+            <Text style={styles.tableChipText}>Live Roastery Tracking</Text>
+          </View>
+          <Text style={styles.brandTitleText}>Orders &amp; History</Text>
+        </View>
+
+        <Pressable
+          style={styles.iconButtonMD3}
+          android_ripple={{ color: 'rgba(0,0,0,0.1)', borderless: true }}
+          onPress={() => refetch()}
+        >
+          <Ionicons name="refresh-outline" size={18} color={KyotoMD3.onSurface} />
+        </Pressable>
+      </View>
+
       {/* Filter Tabs */}
-      <View style={styles.filterRow}>
-        {(['ALL', 'ACTIVE', 'COMPLETED'] as const).map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.filterTab, filter === tab && styles.filterTabActive]}
-            onPress={() => {
-              setFilter(tab);
-              hapticFeedback.selection();
-            }}
-          >
-            <Text
-              style={[
-                styles.filterTabText,
-                filter === tab && styles.filterTabTextActive,
-              ]}
+      <View style={styles.filterRowContainer}>
+        {(['ALL', 'ACTIVE', 'COMPLETED'] as const).map((tab) => {
+          const isActive = filter === tab;
+          return (
+            <Pressable
+              key={tab}
+              style={[styles.filterTab, isActive && styles.filterTabActive]}
+              android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+              onPress={() => setFilter(tab)}
             >
-              {tab.charAt(0) + tab.slice(1).toLowerCase()}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text style={[styles.filterTabText, isActive && styles.filterTabTextActive]}>
+                {tab.charAt(0) + tab.slice(1).toLowerCase()}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} />}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 90 }]}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { void refetch(); }} />}
         showsVerticalScrollIndicator={false}
       >
         {isLoading ? (
-          <ActivityIndicator size="large" color={Colors.uberGreen} style={{ marginTop: 40 }} />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={KyotoMD3.primary} />
+          </View>
         ) : filteredOrders.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="receipt-outline" size={48} color={Colors.textMuted} />
-            <Text style={[Typography.bodyMedium, { color: Colors.textMuted, marginTop: Spacing.md }]}>
-              No orders found in this section
+            <CafeAsyncImage
+              source={{ uri: MediaAssets.heroes.pourOver }}
+              style={styles.emptyHeroImage}
+              borderRadius={Radius.xl}
+              contentFit="cover"
+            />
+            <Text style={styles.emptyHeading}>No orders in this tab</Text>
+            <Text style={styles.emptySub}>
+              Place an order from our artisan menu and track preparation live in real-time.
             </Text>
+            <TouchableOpacity
+              style={styles.browseMenuBtn}
+              onPress={() => router.push('/(tabs)/menu')}
+            >
+              <Text style={styles.browseMenuBtnText}>Explore Artisan Menu</Text>
+              <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+            </TouchableOpacity>
           </View>
         ) : (
           filteredOrders.map((order) => {
@@ -153,157 +192,72 @@ export default function OrdersScreen() {
             const userRating = ratedOrders[order.id] || 0;
 
             return (
-              <CafeCard key={order.id} variant="elevated" style={styles.orderCard}>
-                <View style={styles.cardHeader}>
+              <View key={order.id} style={styles.orderCard}>
+                <View style={styles.cardHeaderRow}>
                   <View>
-                    <Text style={[Typography.titleMedium, { color: Colors.textPrimary, fontWeight: '800' }]}>
-                      Order #{order.orderNumber}
-                    </Text>
-                    <Text style={[Typography.bodySmall, { color: Colors.textMuted }]}>{dateStr}</Text>
+                    <Text style={styles.orderNumberText}>Order #{order.orderNumber}</Text>
+                    <Text style={styles.orderDateText}>{dateStr}</Text>
                   </View>
                   <StatusBadge status={order.status} />
                 </View>
 
-                {/* Interactive Status Timeline (Swiggy/Zomato style) */}
-                <OrderTimeline
-                  status={order.status}
-                  tableNumber={order.table?.tableNumber}
-                />
+                {/* Live Timeline */}
+                <OrderTimeline status={order.status} tableNumber={order.table?.tableNumber} />
 
-                {/* Items Summary */}
-                <View style={styles.itemsSummary}>
+                {/* Items List */}
+                <View style={styles.itemsSummaryBox}>
                   {order.items?.map((item: any) => (
                     <View key={item.id} style={styles.itemRow}>
-                      <Text style={[Typography.bodyMedium, styles.itemQtyName]}>
-                        {item.quantity} × {item.menuItem?.name || 'Item'}
+                      <Text style={styles.itemNameText} numberOfLines={1}>
+                        {item.quantity}× {item.menuItem?.name || item.name || 'Artisan Drink'}
                       </Text>
-                      <Text style={[Typography.bodyMedium, styles.itemPrice]}>
-                        {formatPaise(item.subtotalPaise)}
-                      </Text>
+                      <Text style={styles.itemPriceText}>{formatPaise(item.subtotalPaise)}</Text>
                     </View>
                   ))}
                 </View>
 
-                {/* Barista Rating Widget on Completed Orders (Improvement 43) */}
-                {isServed ? (
-                  <View style={styles.ratingWidgetRow}>
-                    <Text style={styles.ratingLabel}>Rate Your Brew:</Text>
-                    <View style={styles.starsRow}>
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <TouchableOpacity
-                          key={star}
-                          onPress={() => handleRateOrder(order.id, star)}
-                        >
-                          <Ionicons
-                            name={star <= userRating ? 'star' : 'star-outline'}
-                            size={18}
-                            color={star <= userRating ? '#FFB300' : Colors.textMuted}
-                            style={{ marginHorizontal: 2 }}
-                          />
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                ) : null}
-
-                {/* Footer with Actions: 1-Tap Reorder & Receipt Breakdown (Improvements 41 & 42) */}
+                {/* Footer / Rating or Re-Order */}
                 <View style={styles.cardFooter}>
-                  <View style={styles.tableBadge}>
-                    <Ionicons name="restaurant-outline" size={13} color={Colors.uberGreenDark} />
-                    <Text style={styles.tableText}>
-                      {order.table?.tableNumber ? `Table ${order.table.tableNumber}` : 'Dine-In Table 1'}
-                    </Text>
+                  <View style={styles.totalCol}>
+                    <Text style={styles.totalLabel}>Total Paid</Text>
+                    <Text style={styles.totalValue}>{formatPaise(order.totalPaise)}</Text>
                   </View>
 
-                  <View style={styles.actionsRow}>
-                    <TouchableOpacity
-                      style={styles.receiptBtn}
-                      onPress={() => setSelectedReceipt(order)}
-                    >
-                      <Ionicons name="document-text-outline" size={14} color={Colors.uberBlack} />
-                      <Text style={styles.receiptBtnText}>Bill</Text>
-                    </TouchableOpacity>
+                  <View style={styles.actionButtonRow}>
+                    {isServed && (
+                      <View style={styles.ratingBox}>
+                        <Text style={styles.rateLabel}>Rate:</Text>
+                        <View style={styles.starsRow}>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <TouchableOpacity
+                              key={star}
+                              onPress={() => handleRateOrder(order.id, star)}
+                            >
+                              <Ionicons
+                                name={star <= userRating ? 'star' : 'star-outline'}
+                                size={15}
+                                color={star <= userRating ? KyotoMD3.ratingStar : KyotoMD3.outline}
+                              />
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+                    )}
 
                     <TouchableOpacity
-                      style={styles.reorderBtn}
+                      style={styles.reorderButton}
                       onPress={() => handleReorder(order)}
                     >
-                      <Ionicons name="repeat" size={14} color="#FFFFFF" />
-                      <Text style={styles.reorderBtnText}>Re-Order</Text>
+                      <Ionicons name="repeat" size={13} color={KyotoMD3.primary} />
+                      <Text style={styles.reorderButtonText}>Reorder</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
-              </CafeCard>
+              </View>
             );
           })
         )}
       </ScrollView>
-
-      {/* Itemized Tax Invoice Modal (Improvement 42) */}
-      <Modal
-        visible={!!selectedReceipt}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setSelectedReceipt(null)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.receiptModalCard}>
-            <View style={styles.receiptModalHeader}>
-              <View>
-                <Text style={styles.receiptModalTitle}>OFFICIAL TAX INVOICE</Text>
-                <Text style={styles.receiptModalSub}>GSTIN: 29AAAAA0000A1Z5</Text>
-              </View>
-              <TouchableOpacity onPress={() => setSelectedReceipt(null)}>
-                <Ionicons name="close-circle" size={26} color={Colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.receiptDashedLine} />
-
-            <View style={styles.receiptMetaRow}>
-              <Text style={styles.metaLabel}>Order Ref:</Text>
-              <Text style={styles.metaVal}>#{selectedReceipt?.orderNumber}</Text>
-            </View>
-            <View style={styles.receiptMetaRow}>
-              <Text style={styles.metaLabel}>Table:</Text>
-              <Text style={styles.metaVal}>Table {selectedReceipt?.table?.tableNumber || 1}</Text>
-            </View>
-            <View style={styles.receiptMetaRow}>
-              <Text style={styles.metaLabel}>Timestamp:</Text>
-              <Text style={styles.metaVal}>
-                {selectedReceipt ? new Date(selectedReceipt.createdAt).toLocaleString('en-IN') : ''}
-              </Text>
-            </View>
-
-            <View style={styles.receiptDashedLine} />
-
-            {/* Items */}
-            <ScrollView style={{ maxHeight: 200 }}>
-              {selectedReceipt?.items?.map((it: any) => (
-                <View key={it.id} style={styles.modalItemRow}>
-                  <Text style={styles.modalItemName}>
-                    {it.quantity}x {it.menuItem?.name || it.name}
-                  </Text>
-                  <Text style={styles.modalItemPrice}>{formatPaise(it.subtotalPaise)}</Text>
-                </View>
-              ))}
-            </ScrollView>
-
-            <View style={styles.receiptSolidLine} />
-
-            <View style={styles.receiptTotalRow}>
-              <Text style={styles.modalGrandLabel}>Total Paid</Text>
-              <Text style={styles.modalGrandValue}>{formatPaise(selectedReceipt?.totalPaise || 0)}</Text>
-            </View>
-
-            <CafeButton
-              title="Done"
-              onPress={() => setSelectedReceipt(null)}
-              style={{ marginTop: Spacing.base }}
-            />
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -311,231 +265,251 @@ export default function OrdersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F6F6',
+    backgroundColor: KyotoMD3.surface,
   },
-  filterRow: {
+  topAppBar: {
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    backgroundColor: KyotoMD3.surface,
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: KyotoMD3.outlineSubtle,
+  },
+  headerTitleCol: {
+    flexDirection: 'column',
+  },
+  tableChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: KyotoMD3.primaryContainer,
+    paddingVertical: 3,
+    paddingHorizontal: 9,
+    borderRadius: Radius.full,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  tableDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: KyotoMD3.primary,
+  },
+  tableChipText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: KyotoMD3.primary,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  brandTitleText: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.6,
+    color: KyotoMD3.onSurface,
+  },
+  iconButtonMD3: {
+    width: 38,
+    height: 38,
+    borderRadius: Radius.full,
+    backgroundColor: KyotoMD3.surfaceContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      android: { elevation: 1 },
+    }),
+  },
+  filterRowContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 8,
   },
   filterTab: {
-    paddingVertical: 7,
-    paddingHorizontal: Spacing.base,
-    borderRadius: Radius.full,
-    marginRight: Spacing.sm,
-    backgroundColor: '#F6F6F6',
-    borderWidth: 1.5,
-    borderColor: Colors.border,
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: Radius.md,
+    backgroundColor: KyotoMD3.surfaceBright,
+    borderWidth: 1,
+    borderColor: KyotoMD3.outlineSubtle,
+    ...Platform.select({
+      android: { elevation: 1 },
+    }),
   },
   filterTabActive: {
-    backgroundColor: Colors.uberGreen,
-    borderColor: Colors.uberGreen,
+    backgroundColor: KyotoMD3.primary,
+    borderColor: KyotoMD3.primary,
   },
   filterTabText: {
-    ...Typography.labelMedium,
-    color: Colors.textSecondary,
+    fontSize: 12,
     fontWeight: '700',
+    color: KyotoMD3.onSurfaceVariant,
   },
   filterTabTextActive: {
     color: '#FFFFFF',
-    fontWeight: '800',
   },
   scrollContent: {
-    padding: Spacing.base,
-    paddingBottom: 60,
+    paddingHorizontal: 20,
+    gap: 14,
+  },
+  loadingContainer: {
+    paddingVertical: 60,
+    alignItems: 'center',
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+    paddingVertical: 40,
+    paddingHorizontal: 20,
   },
-  orderCard: {
-    marginBottom: Spacing.base,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: '#FFFFFF',
-    ...Elevation.sm,
+  emptyHeroImage: {
+    width: '100%',
+    height: 160,
+    marginBottom: 16,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+  emptyHeading: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: KyotoMD3.onSurface,
+    marginBottom: 4,
   },
-  itemsSummary: {
-    paddingVertical: Spacing.sm,
-  },
-  itemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 3,
-  },
-  itemQtyName: {
-    color: Colors.textPrimary,
-    fontWeight: '600',
-  },
-  itemPrice: {
-    color: Colors.textSecondary,
-    fontWeight: '600',
-  },
-  ratingWidgetRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFF9C4',
-    padding: 8,
-    borderRadius: Radius.sm,
-    marginVertical: 6,
-  },
-  ratingLabel: {
+  emptySub: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#5D4037',
+    color: KyotoMD3.onSurfaceVariant,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 20,
   },
-  starsRow: {
-    flexDirection: 'row',
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  tableBadge: {
+  browseMenuBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E8F8F0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    gap: 6,
+    backgroundColor: KyotoMD3.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: Radius.full,
-    gap: 4,
   },
-  tableText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.uberGreenDark,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  receiptBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: Radius.sm,
-    gap: 4,
-  },
-  receiptBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.uberBlack,
-  },
-  reorderBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.uberGreen,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.sm,
-    gap: 4,
-  },
-  reorderBtnText: {
+  browseMenuBtnText: {
     fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    padding: Spacing.xl,
+  orderCard: {
+    backgroundColor: KyotoMD3.surfaceBright,
+    borderRadius: Radius.xl,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: KyotoMD3.outlineSubtle,
+    ...Platform.select({
+      android: { elevation: 2 },
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+      },
+    }),
   },
-  receiptModalCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: Radius.lg,
-    padding: Spacing.base,
-    ...Elevation.lg,
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
-  receiptModalHeader: {
+  orderNumberText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: KyotoMD3.onSurface,
+    marginBottom: 2,
+  },
+  orderDateText: {
+    fontSize: 11,
+    color: KyotoMD3.onSurfaceVariant,
+  },
+  itemsSummaryBox: {
+    backgroundColor: KyotoMD3.surfaceContainer,
+    borderRadius: Radius.md,
+    padding: 10,
+    marginVertical: 10,
+    gap: 6,
+  },
+  itemRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  receiptModalTitle: {
-    fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: 1,
-    color: Colors.textPrimary,
-  },
-  receiptModalSub: {
-    fontSize: 11,
-    color: Colors.textMuted,
-  },
-  receiptDashedLine: {
-    borderStyle: 'dashed',
-    borderWidth: 0.8,
-    borderColor: '#CCCCCC',
-    marginVertical: 10,
-  },
-  receiptSolidLine: {
-    borderWidth: 1,
-    borderColor: '#000000',
-    marginVertical: 10,
-  },
-  receiptMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  metaLabel: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-  },
-  metaVal: {
+  itemNameText: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.textPrimary,
+    color: KyotoMD3.onSurface,
+    flex: 1,
+    marginRight: 10,
   },
-  modalItemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 4,
+  itemPriceText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: KyotoMD3.onSurface,
   },
-  modalItemName: {
-    fontSize: 13,
-    color: Colors.textPrimary,
-    fontWeight: '500',
-  },
-  modalItemPrice: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  receiptTotalRow: {
+  cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: KyotoMD3.outlineSubtle,
+    paddingTop: 12,
   },
-  modalGrandLabel: {
+  totalCol: {
+    flexDirection: 'column',
+  },
+  totalLabel: {
+    fontSize: 10,
+    color: KyotoMD3.onSurfaceVariant,
+    fontWeight: '600',
+  },
+  totalValue: {
     fontSize: 16,
-    fontWeight: '900',
-    color: Colors.textPrimary,
+    fontWeight: '800',
+    color: KyotoMD3.onSurface,
   },
-  modalGrandValue: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: Colors.uberGreenDark,
+  actionButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  ratingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: KyotoMD3.surfaceContainer,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: Radius.md,
+  },
+  rateLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: KyotoMD3.onSurfaceVariant,
+  },
+  starsRow: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  reorderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: KyotoMD3.primaryContainer,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: Radius.full,
+  },
+  reorderButtonText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: KyotoMD3.primary,
   },
 });
