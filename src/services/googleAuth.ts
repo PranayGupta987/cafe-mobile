@@ -16,9 +16,9 @@ export const googleDiscovery: AuthSession.DiscoveryDocument = {
 
 // Configurable Google Client IDs
 export const GOOGLE_CONFIG = {
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '170081666392-8qgvmpcf6peg7th1sl34a5dindvigoca.apps.googleusercontent.com',
-  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '170081666392-8qgvmpcf6peg7th1sl34a5dindvigoca.apps.googleusercontent.com',
-  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '170081666392-8qgvmpcf6peg7th1sl34a5dindvigoca.apps.googleusercontent.com',
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '435112311982-k7jbtohlcicukm0vcvpv80c56gk65e83.apps.googleusercontent.com',
+  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '435112311982-k7jbtohlcicukm0vcvpv80c56gk65e83.apps.googleusercontent.com',
+  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '435112311982-k7jbtohlcicukm0vcvpv80c56gk65e83.apps.googleusercontent.com',
 };
 
 export function getEffectiveClientId(): string {
