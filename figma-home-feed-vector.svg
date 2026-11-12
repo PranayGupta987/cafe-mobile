@@ -1,0 +1,106 @@
+<svg width="393" height="852" viewBox="0 0 393 852" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Canvas -->
+    <rect id="bg" width="393" height="852" rx="48" fill="#F7F5F0"/>
+
+    <clipPath id="screenClip">
+      <rect width="393" height="852" rx="48" fill="#F7F5F0"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#screenClip)">
+    <!-- Canvas Background -->
+    <rect width="393" height="852" fill="#F7F5F0"/>
+
+    <!-- Dynamic Island -->
+    <rect x="134" y="11" width="125" height="35" rx="17.5" fill="#111111"/>
+    <circle cx="236" cy="28" r="5" fill="#000000"/>
+
+    <!-- Minimal Header -->
+    <g transform="translate(24, 60)">
+      <circle cx="3" cy="3" r="3" fill="#2E5C38"/>
+      <text x="12" y="6" fill="#2E5C38" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="700" letter-spacing="1.5">DINE-IN • TABLE 04</text>
+      <text x="0" y="28" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="20" font-weight="800">Artisan Roastery</text>
+
+      <!-- Icons -->
+      <circle cx="304" cy="18" r="18" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.08"/>
+      <circle cx="342" cy="18" r="18" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.08"/>
+    </g>
+
+    <!-- Category Pill Rail -->
+    <g transform="translate(24, 118)">
+      <rect x="0" y="0" width="140" height="34" rx="17" fill="#111111"/>
+      <text x="70" y="21" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="700">Reserve Pour-Over</text>
+
+      <rect x="148" y="0" width="100" height="34" rx="17" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.08"/>
+      <text x="198" y="21" text-anchor="middle" fill="#555555" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="600">Warm Bakes</text>
+
+      <rect x="256" y="0" width="90" height="34" rx="17" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.08"/>
+      <text x="301" y="21" text-anchor="middle" fill="#555555" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="600">Nitro Brew</text>
+    </g>
+
+    <!-- Cinematic Hero 1 -->
+    <g transform="translate(20, 168)">
+      <rect x="0" y="0" width="353" height="300" rx="24" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.06"/>
+      <rect x="0" y="0" width="353" height="190" rx="24" fill="#E8E2D5"/>
+
+      <!-- Badges -->
+      <rect x="14" y="14" width="90" height="22" rx="11" fill="#FFFFFF" fill-opacity="0.9"/>
+      <text x="59" y="28" text-anchor="middle" fill="#2E5C38" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="800">ORIGIN LOT 42</text>
+
+      <rect x="290" y="14" width="48" height="22" rx="11" fill="#111111" fill-opacity="0.75"/>
+      <text x="314" y="28" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">★ 4.98</text>
+
+      <!-- Details -->
+      <text x="18" y="222" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="18" font-weight="800">Geisha Panama V60</text>
+      <text x="335" y="222" text-anchor="end" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="18" font-weight="800">₹380</text>
+      <text x="18" y="242" fill="#555555" font-family="Plus Jakarta Sans, sans-serif" font-size="11">Jasmine florals, Meyer lemon brightness, bergamot finish</text>
+
+      <!-- CTA -->
+      <line x1="18" y1="258" x2="335" y2="258" stroke="#000000" stroke-opacity="0.06"/>
+      <rect x="18" y="268" width="70" height="20" rx="10" fill="#F7F5F0"/>
+      <text x="53" y="281" text-anchor="middle" fill="#555555" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="700">Single Origin</text>
+
+      <rect x="225" y="264" width="110" height="26" rx="13" fill="#111111"/>
+      <text x="280" y="280" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">Select &amp; Craft</text>
+    </g>
+
+    <!-- Minimal Pairing Voucher -->
+    <g transform="translate(20, 484)">
+      <rect x="0" y="0" width="353" height="66" rx="16" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.07"/>
+      <circle cx="0" cy="33" r="7" fill="#F7F5F0"/>
+      <circle cx="353" cy="33" r="7" fill="#F7F5F0"/>
+
+      <text x="20" y="22" fill="#9E744A" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="800" letter-spacing="1">TABLE 04 COURTESY</text>
+      <text x="20" y="40" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="13" font-weight="700">Complimentary Almond Viennoiserie</text>
+      <text x="20" y="54" fill="#8E8B85" font-family="monospace" font-size="9">CODE: KYOTO25</text>
+
+      <rect x="278" y="18" width="56" height="28" rx="14" fill="#F7F5F0" stroke="#000000" stroke-opacity="0.1"/>
+      <text x="306" y="35" text-anchor="middle" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">Apply</text>
+    </g>
+
+    <!-- Secondary Cinematic Card -->
+    <g transform="translate(20, 566)">
+      <rect x="0" y="0" width="353" height="180" rx="20" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.06"/>
+      <rect x="0" y="0" width="353" height="120" rx="20" fill="#DCD5C8"/>
+
+      <text x="18" y="146" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="14" font-weight="800">Spanish Cortado</text>
+      <text x="18" y="162" fill="#555555" font-family="Plus Jakarta Sans, sans-serif" font-size="10">Double ristretto with micro-foamed Jersey milk</text>
+
+      <text x="290" y="152" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="15" font-weight="800">₹220</text>
+      <circle cx="325" cy="148" r="12" fill="#111111"/>
+      <text x="325" y="152" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="12" font-weight="700">+</text>
+    </g>
+
+    <!-- Floating White Dock -->
+    <g transform="translate(20, 770)">
+      <rect x="0" y="0" width="353" height="52" rx="26" fill="#FFFFFF" fill-opacity="0.94" stroke="#000000" stroke-opacity="0.08"/>
+      <rect x="14" y="14" width="58" height="24" rx="12" fill="#111111"/>
+      <text x="43" y="30" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="800">2 ITEMS</text>
+      <text x="82" y="31" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="14" font-weight="800">₹600</text>
+
+      <rect x="220" y="11" width="118" height="30" rx="15" fill="#2E5C38"/>
+      <text x="279" y="30" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="700">Table Order →</text>
+    </g>
+  </g>
+</svg>
