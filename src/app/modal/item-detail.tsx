@@ -4,27 +4,41 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
-  Dimensions,
   TextInput,
-  Alert,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/constants/colors';
-import { Spacing, Radius, Elevation } from '@/constants/dimens';
-import { Typography } from '@/constants/typography';
+import * as Haptics from 'expo-haptics';
+import { Radius } from '@/constants/dimens';
 import { formatPaise } from '@/utils/currency';
 import { useCartStore } from '@/stores/cartStore';
 import { VegIndicator } from '@/components/specific/VegIndicator';
-import { DietaryBadge } from '@/components/specific/DietaryBadge';
 import { CafeAsyncImage } from '@/components/common/CafeAsyncImage';
 import { MediaAssets } from '@/constants/media';
-import { hapticFeedback } from '@/utils/haptics';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// Android MD3 + Kyoto Minimalist Color Tokens
+const KyotoMD3 = {
+  surface: '#F8F5F0',
+  surfaceContainer: '#F1ECE1',
+  surfaceContainerHigh: '#EAE3D5',
+  surfaceBright: '#FFFFFF',
+  onSurface: '#1D1B16',
+  onSurfaceVariant: '#5A554E',
+  outline: '#8E8B85',
+  outlineSubtle: 'rgba(0, 0, 0, 0.06)',
+  primary: '#1C3B22',
+  primaryContainer: '#CFE9D2',
+  onPrimary: '#FFFFFF',
+  secondary: '#855325',
+  secondaryContainer: '#F6E5D4',
+  ratingStar: '#E5A93C',
+};
 
 export default function ItemDetailModal() {
   const router = useRouter();
@@ -45,7 +59,6 @@ export default function ItemDetailModal() {
 
   const basePricePaise = parseInt(params.pricePaise || '0', 10);
   const isVeg = params.isVeg === 'true';
-  const isSpicy = params.isSpicy === 'true';
   const isOutOfStock = params.isOutOfStock === 'true';
   const displayImage = params.imageUrl || MediaAssets.fallbackByKeyword(params.name || '');
 
@@ -69,19 +82,17 @@ export default function ItemDetailModal() {
     );
   }, [params.name, params.categoryName]);
 
-  // Beverage Customization Options
+  // Beverage & Food Customization Options
   const [selectedSize, setSelectedSize] = useState<'regular' | 'large'>('regular');
   const [selectedMilk, setSelectedMilk] = useState<'standard' | 'oat' | 'almond'>('standard');
-  const [espressoShot, setEspressoShot] = useState<'standard' | 'double' | 'ristretto' | 'decaf'>('standard');
-  const [sweetness, setSweetness] = useState<'regular' | 'less' | 'zero'>('regular');
-
-  // Food Customization Options
+  const [espressoShot, setEspressoShot] = useState<'standard' | 'double'>('standard');
+  const [sweetness, setSweetness] = useState<'regular' | 'less' | 'zero'>('zero');
+  const [servingTemp, setServingTemp] = useState<'hot' | 'iced'>('hot');
   const [foodPrep, setFoodPrep] = useState<'toasted' | 'fresh'>('toasted');
   const [foodFinishing, setFoodFinishing] = useState<'butter' | 'olive_oil' | 'plain'>('butter');
 
   const [notes, setNotes] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [notified, setNotified] = useState(false);
 
   const sizeExtraPaise = selectedSize === 'large' ? 4000 : 0;
   const milkExtraPaise = isCoffeeOrBeverage ? (selectedMilk === 'oat' ? 3000 : selectedMilk === 'almond' ? 3500 : 0) : 0;
@@ -91,16 +102,17 @@ export default function ItemDetailModal() {
 
   const handleAddToCart = () => {
     if (isOutOfStock) return;
-    hapticFeedback.success();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     const sizeLabel = selectedSize === 'large' ? (isCoffeeOrBeverage ? 'Large (475ml)' : 'Large Portion') : (isCoffeeOrBeverage ? 'Regular (350ml)' : 'Standard Portion');
 
     const customNotes = isCoffeeOrBeverage
       ? [
           sizeLabel,
-          selectedMilk === 'oat' ? 'Oat Milk' : selectedMilk === 'almond' ? 'Almond Milk' : '',
-          espressoShot === 'double' ? 'Double Shot' : espressoShot === 'ristretto' ? 'Ristretto' : espressoShot === 'decaf' ? 'Decaf' : '',
-          sweetness === 'less' ? '50% Sweet' : sweetness === 'zero' ? 'Unsweetened' : '',
+          servingTemp === 'hot' ? 'Hot & Steamed' : 'Over Clear Ice',
+          selectedMilk === 'oat' ? 'Oat Milk' : selectedMilk === 'almond' ? 'Almond Milk' : 'Jersey Whole',
+          espressoShot === 'double' ? 'Double Shot' : '',
+          sweetness === 'less' ? 'Subtle Sweet (50%)' : sweetness === 'zero' ? 'Unsweetened (0%)' : 'Standard Sweet',
           notes.trim(),
         ]
           .filter(Boolean)
@@ -128,16 +140,12 @@ export default function ItemDetailModal() {
     router.back();
   };
 
-  const handleNotifyMe = () => {
-    setNotified(true);
-    hapticFeedback.success();
-    Alert.alert('Subscribed!', "We'll ping you the instant this artisan item is fresh out of the roaster & kitchen.");
-  };
-
   return (
     <View style={styles.container}>
+      <StatusBar style="light" />
+
       <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
-        {/* Full Bleed Hero Media */}
+        {/* Full-Bleed Hero Image */}
         <View style={styles.imageHeader}>
           <CafeAsyncImage
             source={{ uri: displayImage }}
@@ -156,353 +164,360 @@ export default function ItemDetailModal() {
             onPress={() => router.back()}
             activeOpacity={0.8}
           >
-            <Ionicons name="close" size={22} color="#FFFFFF" />
+            <Ionicons name="close" size={20} color="#FFFFFF" />
           </TouchableOpacity>
 
-          {/* Micro-Badges on Hero */}
+          {/* Floating Badges on Hero */}
           <View style={styles.heroBadgesRow}>
             <View style={styles.heroPill}>
-              <Ionicons name="flash" size={13} color="#06C167" />
-              <Text style={styles.heroPillText}>Prep: 12-15 min</Text>
+              <Ionicons name="star" size={11} color={KyotoMD3.ratingStar} />
+              <Text style={styles.heroPillText}>4.98 (Reserve)</Text>
             </View>
             <View style={styles.heroPill}>
-              <Ionicons name="star" size={13} color="#FF9500" />
-              <Text style={styles.heroPillText}>4.9 (1.2k+)</Text>
+              <Ionicons name="time-outline" size={12} color="#FFFFFF" />
+              <Text style={styles.heroPillText}>10-12 min brew</Text>
             </View>
           </View>
-
-          {/* Out of stock overlay */}
-          {isOutOfStock ? (
-            <View style={styles.outOfStockOverlay}>
-              <Ionicons name="alert-circle" size={32} color="#FFFFFF" />
-              <Text style={styles.outOfStockText}>Currently Brewing / Sold Out</Text>
-            </View>
-          ) : null}
         </View>
 
         {/* Content Body */}
         <View style={styles.body}>
+          {/* Title & Price Header */}
           <View style={styles.titleRow}>
             <View style={{ flex: 1 }}>
               <View style={styles.vegCategoryRow}>
-                <VegIndicator isVeg={isVeg} size={16} />
+                <VegIndicator isVeg={isVeg} size={13} />
                 <Text style={styles.categoryBadgeText}>
-                  {params.categoryName || 'Signature Roast'}
+                  {params.categoryName || 'Artisan Special'}
                 </Text>
-                {isSpicy ? <DietaryBadge type="spicy" /> : null}
               </View>
-              <Text style={[Typography.editorialMedium, styles.titleText]}>
-                {params.name || 'Specialty Cold Brew'}
+              <Text style={styles.titleText}>
+                {params.name || 'Specialty Roast'}
               </Text>
             </View>
-            <Text style={[Typography.h2, styles.priceText]}>
+            <Text style={styles.priceText}>
               {formatPaise(basePricePaise)}
             </Text>
           </View>
 
-          {/* Description */}
-          <Text style={[Typography.bodyMedium, styles.descriptionText]}>
+          {/* Sensory Description */}
+          <Text style={styles.descriptionText}>
             {params.description ||
-              'Slow steeped for 18 hours using single-origin Ethiopian heirloom beans with tasting notes of bergamot, dark cocoa, and stone fruits.'}
+              'Hand-harvested Boquete micro-lot with notes of white jasmine florals, Meyer lemon sweetness, and delicate bergamot finish.'}
           </Text>
 
-          {/* Conditional Sensory Notes (Coffee vs Food) */}
-          {isCoffeeOrBeverage ? (
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionHeader}>Flavor Profile & Sensory Notes</Text>
-              <View style={styles.flavorGrid}>
-                <View style={styles.flavorItem}>
-                  <Text style={styles.flavorLabel}>Acidity</Text>
-                  <Text style={styles.flavorDots}>● ● ○</Text>
-                  <Text style={styles.flavorSub}>Bright Citrus</Text>
-                </View>
-                <View style={styles.flavorItem}>
-                  <Text style={styles.flavorLabel}>Body</Text>
-                  <Text style={styles.flavorDots}>● ● ●</Text>
-                  <Text style={styles.flavorSub}>Velvety Full</Text>
-                </View>
-                <View style={styles.flavorItem}>
-                  <Text style={styles.flavorLabel}>Roast Level</Text>
-                  <Text style={styles.flavorDots}>● ● ○</Text>
-                  <Text style={styles.flavorSub}>Medium Craft</Text>
-                </View>
+          {/* Option Group 1: Portion Size */}
+          <View style={styles.optGroup}>
+            <View style={styles.optGroupHeader}>
+              <Text style={styles.optGroupTitle}>PORTION SIZE</Text>
+              <View style={styles.requiredCapsule}>
+                <Text style={styles.requiredCapsuleText}>REQUIRED</Text>
               </View>
             </View>
-          ) : (
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionHeader}>Culinary Craft & Texture</Text>
-              <View style={styles.flavorGrid}>
-                <View style={styles.flavorItem}>
-                  <Text style={styles.flavorLabel}>Crumb / Flake</Text>
-                  <Text style={styles.flavorDots}>● ● ●</Text>
-                  <Text style={styles.flavorSub}>Laminated Crispy</Text>
-                </View>
-                <View style={styles.flavorItem}>
-                  <Text style={styles.flavorLabel}>Warmth</Text>
-                  <Text style={styles.flavorDots}>● ● ○</Text>
-                  <Text style={styles.flavorSub}>Oven Baked Fresh</Text>
-                </View>
-                <View style={styles.flavorItem}>
-                  <Text style={styles.flavorLabel}>Sourcing</Text>
-                  <Text style={styles.flavorDots}>● ● ●</Text>
-                  <Text style={styles.flavorSub}>Organic Flour</Text>
-                </View>
-              </View>
-            </View>
-          )}
-
-          {/* Dietary & Allergen Warning Callout */}
-          <View style={styles.allergenBanner}>
-            <Ionicons name="information-circle" size={18} color="#E65100" />
-            <Text style={styles.allergenText}>
-              Allergen Note: Prepared in an artisanal kitchen handling organic dairy alternatives, gluten, and nuts.
-            </Text>
-          </View>
-
-          {/* Size / Portion Selector */}
-          <View style={styles.customSection}>
-            <Text style={styles.sectionHeader}>{isCoffeeOrBeverage ? 'Cup Size' : 'Portion Size'}</Text>
-            <View style={styles.optionsRow}>
-              <TouchableOpacity
-                style={[
-                  styles.optionPill,
-                  selectedSize === 'regular' && styles.optionPillActive,
-                ]}
+            <View style={styles.optPillsRow}>
+              <Pressable
+                style={[styles.optPill, selectedSize === 'regular' && styles.optPillActive]}
+                android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
                 onPress={() => {
+                  Haptics.selectionAsync();
                   setSelectedSize('regular');
-                  hapticFeedback.selection();
                 }}
               >
-                <Text
-                  style={[
-                    styles.optionTitle,
-                    selectedSize === 'regular' && styles.optionTitleActive,
-                  ]}
-                >
-                  {isCoffeeOrBeverage ? 'Regular (350ml)' : 'Standard Serving'}
+                <Text style={[styles.optPillName, selectedSize === 'regular' && styles.optPillNameActive]}>
+                  {isCoffeeOrBeverage ? 'Regular (350ml)' : 'Standard Portion'}
                 </Text>
-                <Text style={styles.optionSubtitle}>Standard</Text>
-              </TouchableOpacity>
+                <Text style={styles.optPillSub}>+₹0</Text>
+              </Pressable>
 
-              <TouchableOpacity
-                style={[
-                  styles.optionPill,
-                  selectedSize === 'large' && styles.optionPillActive,
-                ]}
+              <Pressable
+                style={[styles.optPill, selectedSize === 'large' && styles.optPillActive]}
+                android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
                 onPress={() => {
+                  Haptics.selectionAsync();
                   setSelectedSize('large');
-                  hapticFeedback.selection();
                 }}
               >
-                <Text
-                  style={[
-                    styles.optionTitle,
-                    selectedSize === 'large' && styles.optionTitleActive,
-                  ]}
-                >
+                <Text style={[styles.optPillName, selectedSize === 'large' && styles.optPillNameActive]}>
                   {isCoffeeOrBeverage ? 'Large (475ml)' : 'Large Portion'}
                 </Text>
-                <Text style={styles.optionSubtitle}>+₹40</Text>
-              </TouchableOpacity>
+                <Text style={styles.optPillSub}>+₹40</Text>
+              </Pressable>
             </View>
           </View>
 
-          {/* Conditional Options: Coffee (Espresso Shot, Milk, Sweetness) vs Food (Prep, Finishing) */}
+          {/* Conditional Options (Beverage vs Food) */}
           {isCoffeeOrBeverage ? (
             <>
-              {/* Espresso Shot Intensity Selector */}
-              <View style={styles.customSection}>
-                <Text style={styles.sectionHeader}>Espresso Shot Intensity</Text>
-                <View style={styles.optionsGrid}>
-                  {[
-                    { id: 'standard', label: 'Standard Single', sub: 'Balanced' },
-                    { id: 'double', label: 'Double Shot', sub: '+₹25' },
-                    { id: 'ristretto', label: 'Ristretto', sub: 'Short & Sweet' },
-                    { id: 'decaf', label: 'Swiss Decaf', sub: '99% Caffeine Free' },
-                  ].map((shot) => (
-                    <TouchableOpacity
-                      key={shot.id}
-                      style={[
-                        styles.optionPillSmall,
-                        espressoShot === shot.id && styles.optionPillActive,
-                      ]}
-                      onPress={() => {
-                        setEspressoShot(shot.id as any);
-                        hapticFeedback.selection();
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.optionTitleSmall,
-                          espressoShot === shot.id && styles.optionTitleActive,
-                        ]}
-                      >
-                        {shot.label}
-                      </Text>
-                      <Text style={styles.optionSubtitleSmall}>{shot.sub}</Text>
-                    </TouchableOpacity>
-                  ))}
+              {/* Serving Style */}
+              <View style={styles.optGroup}>
+                <View style={styles.optGroupHeader}>
+                  <Text style={styles.optGroupTitle}>SERVING STYLE</Text>
+                </View>
+                <View style={styles.optPillsRow}>
+                  <Pressable
+                    style={[styles.optPill, servingTemp === 'hot' && styles.optPillActive]}
+                    android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setServingTemp('hot');
+                    }}
+                  >
+                    <Ionicons
+                      name="flame-outline"
+                      size={14}
+                      color={servingTemp === 'hot' ? KyotoMD3.primary : KyotoMD3.onSurfaceVariant}
+                    />
+                    <Text style={[styles.optPillName, servingTemp === 'hot' && styles.optPillNameActive]}>
+                      Hot &amp; Steamed
+                    </Text>
+                    <Text style={styles.optPillSub}>65°C</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.optPill, servingTemp === 'iced' && styles.optPillActive]}
+                    android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setServingTemp('iced');
+                    }}
+                  >
+                    <Ionicons
+                      name="snow-outline"
+                      size={14}
+                      color={servingTemp === 'iced' ? KyotoMD3.primary : KyotoMD3.onSurfaceVariant}
+                    />
+                    <Text style={[styles.optPillName, servingTemp === 'iced' && styles.optPillNameActive]}>
+                      Over Clear Ice
+                    </Text>
+                    <Text style={styles.optPillSub}>Chilled</Text>
+                  </Pressable>
                 </View>
               </View>
 
-              {/* Milk Alternatives */}
-              <View style={styles.customSection}>
-                <Text style={styles.sectionHeader}>Milk Choice</Text>
-                <View style={styles.optionsRow}>
-                  {[
-                    { id: 'standard', label: 'Whole Milk', sub: 'Creamy' },
-                    { id: 'oat', label: 'Oat Milk', sub: '+₹30' },
-                    { id: 'almond', label: 'Almond Milk', sub: '+₹35' },
-                  ].map((m) => (
-                    <TouchableOpacity
-                      key={m.id}
-                      style={[
-                        styles.optionPill,
-                        selectedMilk === m.id && styles.optionPillActive,
-                      ]}
-                      onPress={() => {
-                        setSelectedMilk(m.id as any);
-                        hapticFeedback.selection();
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.optionTitle,
-                          selectedMilk === m.id && styles.optionTitleActive,
-                        ]}
-                      >
-                        {m.label}
-                      </Text>
-                      <Text style={styles.optionSubtitle}>{m.sub}</Text>
-                    </TouchableOpacity>
-                  ))}
+              {/* Milk Choice */}
+              <View style={styles.optGroup}>
+                <View style={styles.optGroupHeader}>
+                  <Text style={styles.optGroupTitle}>CHOICE OF MILK</Text>
+                  <View style={styles.requiredCapsule}>
+                    <Text style={styles.requiredCapsuleText}>REQUIRED</Text>
+                  </View>
+                </View>
+                <View style={styles.optPillsRow}>
+                  <Pressable
+                    style={[styles.optPill, selectedMilk === 'standard' && styles.optPillActive]}
+                    android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setSelectedMilk('standard');
+                    }}
+                  >
+                    <Text style={[styles.optPillName, selectedMilk === 'standard' && styles.optPillNameActive]}>
+                      Jersey Whole
+                    </Text>
+                    <Text style={styles.optPillSub}>+₹0</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.optPill, selectedMilk === 'oat' && styles.optPillActive]}
+                    android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setSelectedMilk('oat');
+                    }}
+                  >
+                    <Text style={[styles.optPillName, selectedMilk === 'oat' && styles.optPillNameActive]}>
+                      Oat Milk
+                    </Text>
+                    <Text style={styles.optPillSub}>+₹30</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.optPill, selectedMilk === 'almond' && styles.optPillActive]}
+                    android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setSelectedMilk('almond');
+                    }}
+                  >
+                    <Text style={[styles.optPillName, selectedMilk === 'almond' && styles.optPillNameActive]}>
+                      Almond Milk
+                    </Text>
+                    <Text style={styles.optPillSub}>+₹35</Text>
+                  </Pressable>
                 </View>
               </View>
 
-              {/* Sweetness Level */}
-              <View style={styles.customSection}>
-                <Text style={styles.sectionHeader}>Sweetness Preference</Text>
-                <View style={styles.optionsRow}>
-                  {[
-                    { id: 'regular', label: '100% Regular', sub: 'Classic' },
-                    { id: 'less', label: '50% Less Sweet', sub: 'Subtle' },
-                    { id: 'zero', label: '0% Unsweetened', sub: 'Pure' },
-                  ].map((s) => (
-                    <TouchableOpacity
-                      key={s.id}
-                      style={[
-                        styles.optionPill,
-                        sweetness === s.id && styles.optionPillActive,
-                      ]}
-                      onPress={() => {
-                        setSweetness(s.id as any);
-                        hapticFeedback.selection();
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.optionTitle,
-                          sweetness === s.id && styles.optionTitleActive,
-                        ]}
-                      >
-                        {s.label}
-                      </Text>
-                      <Text style={styles.optionSubtitle}>{s.sub}</Text>
-                    </TouchableOpacity>
-                  ))}
+              {/* Sweetness */}
+              <View style={styles.optGroup}>
+                <View style={styles.optGroupHeader}>
+                  <Text style={styles.optGroupTitle}>SWEETNESS LEVEL</Text>
+                </View>
+                <View style={styles.optPillsRow}>
+                  <Pressable
+                    style={[styles.optPill, sweetness === 'zero' && styles.optPillActive]}
+                    android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setSweetness('zero');
+                    }}
+                  >
+                    <Text style={[styles.optPillName, sweetness === 'zero' && styles.optPillNameActive]}>
+                      Unsweetened
+                    </Text>
+                    <Text style={styles.optPillSub}>0%</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.optPill, sweetness === 'less' && styles.optPillActive]}
+                    android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setSweetness('less');
+                    }}
+                  >
+                    <Text style={[styles.optPillName, sweetness === 'less' && styles.optPillNameActive]}>
+                      Subtle Sweet
+                    </Text>
+                    <Text style={styles.optPillSub}>50%</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.optPill, sweetness === 'regular' && styles.optPillActive]}
+                    android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setSweetness('regular');
+                    }}
+                  >
+                    <Text style={[styles.optPillName, sweetness === 'regular' && styles.optPillNameActive]}>
+                      Standard
+                    </Text>
+                    <Text style={styles.optPillSub}>100%</Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Espresso Boost */}
+              <View style={styles.optGroup}>
+                <View style={styles.optGroupHeader}>
+                  <Text style={styles.optGroupTitle}>ESPRESSO EXTRACTION</Text>
+                </View>
+                <View style={styles.optPillsRow}>
+                  <Pressable
+                    style={[styles.optPill, espressoShot === 'standard' && styles.optPillActive]}
+                    android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setEspressoShot('standard');
+                    }}
+                  >
+                    <Text style={[styles.optPillName, espressoShot === 'standard' && styles.optPillNameActive]}>
+                      Single Shot
+                    </Text>
+                    <Text style={styles.optPillSub}>Included</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.optPill, espressoShot === 'double' && styles.optPillActive]}
+                    android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setEspressoShot('double');
+                    }}
+                  >
+                    <Text style={[styles.optPillName, espressoShot === 'double' && styles.optPillNameActive]}>
+                      Double Shot
+                    </Text>
+                    <Text style={styles.optPillSub}>+₹25</Text>
+                  </Pressable>
                 </View>
               </View>
             </>
           ) : (
             <>
-              {/* Preparation Style */}
-              <View style={styles.customSection}>
-                <Text style={styles.sectionHeader}>Preparation Style</Text>
-                <View style={styles.optionsRow}>
-                  {[
-                    { id: 'toasted', label: 'Warm & Toasted', sub: 'Recommended' },
-                    { id: 'fresh', label: 'Ambient / As-is', sub: 'Soft texture' },
-                  ].map((p) => (
-                    <TouchableOpacity
-                      key={p.id}
-                      style={[
-                        styles.optionPill,
-                        foodPrep === p.id && styles.optionPillActive,
-                      ]}
-                      onPress={() => {
-                        setFoodPrep(p.id as any);
-                        hapticFeedback.selection();
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.optionTitle,
-                          foodPrep === p.id && styles.optionTitleActive,
-                        ]}
-                      >
-                        {p.label}
-                      </Text>
-                      <Text style={styles.optionSubtitle}>{p.sub}</Text>
-                    </TouchableOpacity>
-                  ))}
+              {/* Bakery Preparation */}
+              <View style={styles.optGroup}>
+                <View style={styles.optGroupHeader}>
+                  <Text style={styles.optGroupTitle}>WARMING PREFERENCE</Text>
+                </View>
+                <View style={styles.optPillsRow}>
+                  <Pressable
+                    style={[styles.optPill, foodPrep === 'toasted' && styles.optPillActive]}
+                    android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setFoodPrep('toasted');
+                    }}
+                  >
+                    <Text style={[styles.optPillName, foodPrep === 'toasted' && styles.optPillNameActive]}>
+                      Warm &amp; Toasted
+                    </Text>
+                    <Text style={styles.optPillSub}>Oven fresh</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.optPill, foodPrep === 'fresh' && styles.optPillActive]}
+                    android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setFoodPrep('fresh');
+                    }}
+                  >
+                    <Text style={[styles.optPillName, foodPrep === 'fresh' && styles.optPillNameActive]}>
+                      Ambient Fresh
+                    </Text>
+                    <Text style={styles.optPillSub}>Room temp</Text>
+                  </Pressable>
                 </View>
               </View>
 
-              {/* Chef's Finishing */}
-              <View style={styles.customSection}>
-                <Text style={styles.sectionHeader}>Chef&apos;s Finishing Touch</Text>
-                <View style={styles.optionsRow}>
-                  {[
-                    { id: 'butter', label: 'Herb Butter', sub: 'Rich' },
-                    { id: 'olive_oil', label: 'EVOO & Sea Salt', sub: 'Artisan' },
-                    { id: 'plain', label: 'Plain', sub: 'Natural' },
-                  ].map((f) => (
-                    <TouchableOpacity
-                      key={f.id}
-                      style={[
-                        styles.optionPill,
-                        foodFinishing === f.id && styles.optionPillActive,
-                      ]}
-                      onPress={() => {
-                        setFoodFinishing(f.id as any);
-                        hapticFeedback.selection();
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.optionTitle,
-                          foodFinishing === f.id && styles.optionTitleActive,
-                        ]}
-                      >
-                        {f.label}
-                      </Text>
-                      <Text style={styles.optionSubtitle}>{f.sub}</Text>
-                    </TouchableOpacity>
-                  ))}
+              {/* Finishing Spread */}
+              <View style={styles.optGroup}>
+                <View style={styles.optGroupHeader}>
+                  <Text style={styles.optGroupTitle}>FINISHING SPREAD</Text>
+                </View>
+                <View style={styles.optPillsRow}>
+                  <Pressable
+                    style={[styles.optPill, foodFinishing === 'butter' && styles.optPillActive]}
+                    android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setFoodFinishing('butter');
+                    }}
+                  >
+                    <Text style={[styles.optPillName, foodFinishing === 'butter' && styles.optPillNameActive]}>
+                      Artisan Butter
+                    </Text>
+                    <Text style={styles.optPillSub}>Included</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.optPill, foodFinishing === 'olive_oil' && styles.optPillActive]}
+                    android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setFoodFinishing('olive_oil');
+                    }}
+                  >
+                    <Text style={[styles.optPillName, foodFinishing === 'olive_oil' && styles.optPillNameActive]}>
+                      EVOO &amp; Sea Salt
+                    </Text>
+                    <Text style={styles.optPillSub}>Extra virgin</Text>
+                  </Pressable>
                 </View>
               </View>
             </>
           )}
 
-          {/* Barista / Chef Pairing Suggestion */}
-          <View style={styles.pairingCard}>
-            <View style={styles.pairingLeft}>
-              <Text style={styles.pairingBadge}>BARISTA PAIRING</Text>
-              <Text style={styles.pairingTitle}>Warm Almond Croissant</Text>
-              <Text style={styles.pairingSubtitle}>
-                Flaky French laminated butter pastry with toasted almond frangipane.
-              </Text>
+          {/* Barista Notes */}
+          <View style={styles.optGroup}>
+            <View style={styles.optGroupHeader}>
+              <Text style={styles.optGroupTitle}>BARISTA / KITCHEN NOTES</Text>
             </View>
-            <Ionicons name="sparkles" size={24} color="#06C167" />
-          </View>
-
-          {/* Special Instructions */}
-          <View style={styles.customSection}>
-            <Text style={styles.sectionHeader}>{isCoffeeOrBeverage ? 'Special Barista Instructions' : 'Special Kitchen Instructions'}</Text>
             <TextInput
-              style={styles.textInput}
-              placeholder={isCoffeeOrBeverage ? "e.g. Extra hot, splash of vanilla, no foam..." : "e.g. Dressing on side, extra crispy, allergy info..."}
-              placeholderTextColor={Colors.textMuted}
+              style={styles.notesInput}
+              placeholder="e.g. Extra hot, no lid, napkin on side..."
+              placeholderTextColor={KyotoMD3.outline}
               value={notes}
               onChangeText={setNotes}
               maxLength={120}
@@ -511,63 +526,39 @@ export default function ItemDetailModal() {
         </View>
       </ScrollView>
 
-      {/* Sticky Bottom Add To Cart CTA Bar */}
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) + Spacing.sm }]}>
-        {isOutOfStock ? (
+      {/* Floating Bottom Add Bar */}
+      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
+        <View style={styles.stepperContainer}>
           <TouchableOpacity
-            style={[styles.notifyButton, notified && styles.notifyButtonDone]}
-            onPress={handleNotifyMe}
-            disabled={notified}
+            style={styles.stepButton}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setQuantity(Math.max(1, quantity - 1));
+            }}
           >
-            <Ionicons
-              name={notified ? 'checkmark-circle' : 'notifications-outline'}
-              size={20}
-              color="#FFFFFF"
-              style={{ marginRight: 8 }}
-            />
-            <Text style={styles.notifyButtonText}>
-              {notified ? 'Alert Set When Fresh' : 'Notify When Brewed'}
-            </Text>
+            <Ionicons name="remove" size={16} color={KyotoMD3.onSurface} />
           </TouchableOpacity>
-        ) : (
-          <View style={styles.ctaRow}>
-            {/* Quantity Stepper */}
-            <View style={styles.stepperContainer}>
-              <TouchableOpacity
-                style={styles.stepBtn}
-                onPress={() => {
-                  if (quantity > 1) {
-                    setQuantity((q) => q - 1);
-                    hapticFeedback.tap();
-                  }
-                }}
-              >
-                <Ionicons name="remove" size={18} color="#000000" />
-              </TouchableOpacity>
-              <Text style={styles.quantityCount}>{quantity}</Text>
-              <TouchableOpacity
-                style={styles.stepBtn}
-                onPress={() => {
-                  setQuantity((q) => q + 1);
-                  hapticFeedback.tap();
-                }}
-              >
-                <Ionicons name="add" size={18} color="#000000" />
-              </TouchableOpacity>
-            </View>
+          <Text style={styles.quantityText}>{quantity}</Text>
+          <TouchableOpacity
+            style={styles.stepButton}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setQuantity(quantity + 1);
+            }}
+          >
+            <Ionicons name="add" size={16} color={KyotoMD3.onSurface} />
+          </TouchableOpacity>
+        </View>
 
-            {/* Main Add Button in Uber Green */}
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={handleAddToCart}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.addButtonText}>
-                Add to Order • {formatPaise(totalPricePaise)}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <TouchableOpacity
+          style={styles.addToCartButton}
+          activeOpacity={0.85}
+          onPress={handleAddToCart}
+        >
+          <Text style={styles.addToCartText}>
+            Add to Table Order • {formatPaise(totalPricePaise)}
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -576,15 +567,16 @@ export default function ItemDetailModal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: KyotoMD3.surface,
   },
   scrollContent: {
     paddingBottom: 120,
   },
   imageHeader: {
-    width: SCREEN_WIDTH,
-    height: 300,
+    width: '100%',
+    height: 250,
     position: 'relative',
+    backgroundColor: KyotoMD3.surfaceContainerHigh,
   },
   heroImage: {
     width: '100%',
@@ -592,18 +584,18 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: 48,
-    right: 20,
+    right: 18,
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(29, 27, 22, 0.7)',
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
   },
   heroBadgesRow: {
     position: 'absolute',
-    bottom: 16,
+    bottom: 14,
     left: 20,
     flexDirection: 'row',
     gap: 8,
@@ -611,294 +603,196 @@ const styles = StyleSheet.create({
   heroPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    gap: 4,
+    backgroundColor: 'rgba(29, 27, 22, 0.85)',
+    paddingVertical: 4,
     paddingHorizontal: 10,
-    paddingVertical: 5,
     borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
   },
   heroPillText: {
-    color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    marginLeft: 5,
-  },
-  outOfStockOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  outOfStockText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: 8,
   },
   body: {
-    padding: Spacing.base,
+    padding: 20,
+    backgroundColor: KyotoMD3.surface,
   },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.sm,
+    alignItems: 'baseline',
+    marginBottom: 8,
   },
   vegCategoryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
+    gap: 6,
+    marginBottom: 4,
   },
   categoryBadgeText: {
-    color: Colors.uberGreen,
+    fontSize: 11,
     fontWeight: '700',
-    fontSize: 12,
-    letterSpacing: 0.5,
+    color: KyotoMD3.secondary,
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   titleText: {
-    color: Colors.textPrimary,
+    fontSize: 22,
+    fontWeight: '800',
+    color: KyotoMD3.onSurface,
+    letterSpacing: -0.5,
   },
   priceText: {
-    color: Colors.textPrimary,
+    fontSize: 20,
     fontWeight: '800',
-    marginLeft: Spacing.md,
+    color: KyotoMD3.onSurface,
   },
   descriptionText: {
-    color: Colors.textSecondary,
-    lineHeight: 22,
-    marginBottom: Spacing.lg,
+    fontSize: 13,
+    color: KyotoMD3.onSurfaceVariant,
+    lineHeight: 19,
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: KyotoMD3.outlineSubtle,
   },
-  sectionCard: {
-    backgroundColor: '#F9F9F9',
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
+  optGroup: {
+    marginBottom: 20,
   },
-  sectionHeader: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
-    letterSpacing: -0.2,
-  },
-  flavorGrid: {
+  optGroupHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  flavorItem: {
     alignItems: 'center',
-    flex: 1,
+    marginBottom: 10,
   },
-  flavorLabel: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-  },
-  flavorDots: {
-    fontSize: 13,
-    color: Colors.uberGreen,
-    marginVertical: 2,
-    letterSpacing: 2,
-  },
-  flavorSub: {
+  optGroupTitle: {
     fontSize: 11,
-    color: Colors.textMuted,
-  },
-  allergenBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF3E0',
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: '#FFE0B2',
-    marginBottom: Spacing.lg,
-  },
-  allergenText: {
-    color: '#E65100',
-    fontSize: 12,
-    flex: 1,
-    marginLeft: 8,
-    lineHeight: 17,
-  },
-  customSection: {
-    marginBottom: Spacing.lg,
-  },
-  optionsRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  optionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  optionPill: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: Radius.md,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  optionPillSmall: {
-    width: (SCREEN_WIDTH - 32 - 10) / 2,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: Radius.md,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  optionPillActive: {
-    borderColor: Colors.uberGreen,
-    backgroundColor: '#E8F8F0',
-  },
-  optionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-  },
-  optionTitleSmall: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-  },
-  optionTitleActive: {
-    color: Colors.uberGreenDark,
-    fontWeight: '700',
-  },
-  optionSubtitle: {
-    fontSize: 11,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  optionSubtitleSmall: {
-    fontSize: 10,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  pairingCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F6FBF7',
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: '#C7EED6',
-    marginBottom: Spacing.lg,
-  },
-  pairingLeft: {
-    flex: 1,
-    marginRight: 10,
-  },
-  pairingBadge: {
-    color: Colors.uberGreen,
-    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 0.6,
+    color: KyotoMD3.onSurface,
+    letterSpacing: 0.8,
   },
-  pairingTitle: {
-    color: Colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '700',
-    marginTop: 2,
+  requiredCapsule: {
+    backgroundColor: KyotoMD3.secondaryContainer,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: Radius.full,
   },
-  pairingSubtitle: {
-    color: Colors.textSecondary,
+  requiredCapsuleText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: KyotoMD3.secondary,
+  },
+  optPillsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  optPill: {
+    flex: 1,
+    minWidth: 100,
+    backgroundColor: KyotoMD3.surfaceBright,
+    borderRadius: Radius.md,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: KyotoMD3.outlineSubtle,
+    alignItems: 'center',
+    gap: 2,
+    ...Platform.select({
+      android: { elevation: 1 },
+    }),
+  },
+  optPillActive: {
+    backgroundColor: KyotoMD3.primaryContainer,
+    borderColor: KyotoMD3.primary,
+    borderWidth: 1.5,
+  },
+  optPillName: {
     fontSize: 12,
-    marginTop: 2,
-    lineHeight: 16,
+    fontWeight: '700',
+    color: KyotoMD3.onSurface,
+    textAlign: 'center',
   },
-  textInput: {
-    backgroundColor: '#F9F9F9',
+  optPillNameActive: {
+    color: KyotoMD3.primary,
+  },
+  optPillSub: {
+    fontSize: 10,
+    color: KyotoMD3.onSurfaceVariant,
+  },
+  notesInput: {
+    backgroundColor: KyotoMD3.surfaceBright,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.md,
-    fontSize: 14,
-    color: Colors.textPrimary,
+    borderColor: KyotoMD3.outlineSubtle,
+    padding: 12,
+    fontSize: 12,
+    color: KyotoMD3.onSurface,
   },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    paddingBottom: 24,
-    ...Elevation.md,
-  },
-  ctaRow: {
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+    paddingTop: 12,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: KyotoMD3.outlineSubtle,
+    ...Platform.select({
+      android: { elevation: 8 },
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
+      },
+    }),
   },
   stepperContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F0F0',
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.xs,
-    height: 48,
+    backgroundColor: KyotoMD3.surfaceContainer,
+    borderRadius: Radius.full,
+    padding: 4,
+    gap: 8,
   },
-  stepBtn: {
-    width: 36,
-    height: 48,
+  stepButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: KyotoMD3.surfaceBright,
     alignItems: 'center',
     justifyContent: 'center',
+    ...Platform.select({
+      android: { elevation: 1 },
+    }),
   },
-  quantityCount: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000000',
-    minWidth: 24,
+  quantityText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: KyotoMD3.onSurface,
+    minWidth: 18,
     textAlign: 'center',
   },
-  addButton: {
+  addToCartButton: {
     flex: 1,
-    backgroundColor: Colors.uberGreen,
-    height: 48,
-    borderRadius: Radius.sm,
+    backgroundColor: KyotoMD3.primary,
+    paddingVertical: 14,
+    borderRadius: Radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.uberGreen,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4,
+    ...Platform.select({
+      android: { elevation: 2 },
+    }),
   },
-  addButtonText: {
+  addToCartText: {
+    fontSize: 14,
+    fontWeight: '800',
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  notifyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.uberBlack,
-    height: 48,
-    borderRadius: Radius.sm,
-  },
-  notifyButtonDone: {
-    backgroundColor: Colors.uberGreenDark,
-  },
-  notifyButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
   },
 });
