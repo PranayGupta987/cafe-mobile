@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '@/api/client';
 import { useAuthStore } from '@/stores/authStore';
 import { CafeButton } from '@/components/common/Button';
+import { GoogleSignInButton } from '@/components/common/GoogleSignInButton';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing, Elevation } from '@/constants/dimens';
 import { Typography } from '@/constants/typography';
@@ -159,6 +160,18 @@ export default function LoginScreen() {
             style={styles.submitButton}
           />
 
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <GoogleSignInButton
+            onSuccess={() => router.replace('/(tabs)/home')}
+            onError={(msg) => setError(msg)}
+            style={styles.googleBtn}
+          />
+
           {/* Biometric Quick Login Shortcut (Improvement 55) */}
           <TouchableOpacity
             style={styles.biometricBtn}
@@ -279,6 +292,25 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: Spacing.sm,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: Spacing.base,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  dividerText: {
+    marginHorizontal: Spacing.md,
+    color: Colors.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  googleBtn: {
+    marginBottom: Spacing.sm,
   },
   biometricBtn: {
     flexDirection: 'row',
