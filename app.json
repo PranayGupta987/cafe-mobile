@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "cafeapp",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.cafeapp.mobile",
       "supportsTablet": true,
@@ -50,7 +49,9 @@
         {
           "cameraPermission": "Allow Café App to scan table QR codes for ordering and session check-in."
         }
-      ]
+      ],
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

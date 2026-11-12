@@ -1,106 +1,110 @@
-<svg width="393" height="852" viewBox="0 0 393 852" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="392" height="852" viewBox="0 0 392 852" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
-    <!-- Background Canvas -->
-    <rect id="bg" width="393" height="852" rx="48" fill="#F7F5F0"/>
-
-    <clipPath id="screenClip">
-      <rect width="393" height="852" rx="48" fill="#F7F5F0"/>
+    <clipPath id="heroClip">
+      <rect x="0" y="0" width="353" height="190" rx="24"/>
+    </clipPath>
+    <clipPath id="card2Clip">
+      <rect x="0" y="0" width="353" height="120" rx="20"/>
     </clipPath>
   </defs>
 
-  <g clip-path="url(#screenClip)">
-    <!-- Canvas Background -->
-    <rect width="393" height="852" fill="#F7F5F0"/>
+  <rect width="392" height="852" fill="#F8F5F0"/>
 
-    <!-- Dynamic Island -->
-    <rect x="134" y="11" width="125" height="35" rx="17.5" fill="#111111"/>
-    <circle cx="236" cy="28" r="5" fill="#000000"/>
+  <!-- Status Bar -->
+  <circle cx="196" cy="21" r="7" fill="#000000"/>
+  <text x="24" y="25" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="700">09:41</text>
+  <text x="368" y="25" text-anchor="end" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">5G  ●●●  100%</text>
 
-    <!-- Minimal Header -->
-    <g transform="translate(24, 60)">
-      <circle cx="3" cy="3" r="3" fill="#2E5C38"/>
-      <text x="12" y="6" fill="#2E5C38" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="700" letter-spacing="1.5">DINE-IN • TABLE 04</text>
-      <text x="0" y="28" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="20" font-weight="800">Artisan Roastery</text>
+  <!-- Top App Bar -->
+  <g transform="translate(20, 52)">
+    <rect x="0" y="0" width="134" height="18" rx="9" fill="#CFE9D2"/>
+    <text x="67" y="12" text-anchor="middle" fill="#1C3B22" font-family="Plus Jakarta Sans, sans-serif" font-size="8" font-weight="800">DINE-IN • TABLE 04</text>
+    <text x="0" y="40" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="22" font-weight="800" letter-spacing="-0.6">Kyoto Roastery</text>
 
-      <!-- Icons -->
-      <circle cx="304" cy="18" r="18" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.08"/>
-      <circle cx="342" cy="18" r="18" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.08"/>
+    <circle cx="316" cy="24" r="18" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.08"/>
+    <circle cx="348" cy="24" r="18" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.08"/>
+  </g>
+
+  <!-- Story Circles Rail -->
+  <g transform="translate(20, 126)">
+    <circle cx="34" cy="34" r="32" fill="#1C3B22"/>
+    <circle cx="34" cy="34" r="30" fill="#FFFFFF"/>
+    <image x="6" y="6" width="56" height="56" rx="28" preserveAspectRatio="xMidYMid slice" xlink:href="https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&amp;fit=crop&amp;w=400&amp;q=85"/>
+    <text x="34" y="82" text-anchor="middle" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">Origin</text>
+
+    <g transform="translate(80, 0)">
+      <circle cx="34" cy="34" r="32" fill="#1C3B22"/>
+      <image x="6" y="6" width="56" height="56" rx="28" preserveAspectRatio="xMidYMid slice" xlink:href="https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&amp;fit=crop&amp;w=400&amp;q=85"/>
+      <text x="34" y="82" text-anchor="middle" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">Latte Art</text>
     </g>
 
-    <!-- Category Pill Rail -->
-    <g transform="translate(24, 118)">
-      <rect x="0" y="0" width="140" height="34" rx="17" fill="#111111"/>
-      <text x="70" y="21" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="700">Reserve Pour-Over</text>
-
-      <rect x="148" y="0" width="100" height="34" rx="17" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.08"/>
-      <text x="198" y="21" text-anchor="middle" fill="#555555" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="600">Warm Bakes</text>
-
-      <rect x="256" y="0" width="90" height="34" rx="17" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.08"/>
-      <text x="301" y="21" text-anchor="middle" fill="#555555" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="600">Nitro Brew</text>
+    <g transform="translate(160, 0)">
+      <circle cx="34" cy="34" r="32" fill="#1C3B22"/>
+      <image x="6" y="6" width="56" height="56" rx="28" preserveAspectRatio="xMidYMid slice" xlink:href="https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&amp;fit=crop&amp;w=400&amp;q=85"/>
+      <text x="34" y="82" text-anchor="middle" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">Bakes</text>
     </g>
 
-    <!-- Cinematic Hero 1 -->
-    <g transform="translate(20, 168)">
-      <rect x="0" y="0" width="353" height="300" rx="24" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.06"/>
-      <rect x="0" y="0" width="353" height="190" rx="24" fill="#E8E2D5"/>
+    <g transform="translate(240, 0)">
+      <circle cx="34" cy="34" r="32" fill="#1C3B22"/>
+      <image x="6" y="6" width="56" height="56" rx="28" preserveAspectRatio="xMidYMid slice" xlink:href="https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&amp;fit=crop&amp;w=400&amp;q=85"/>
+      <text x="34" y="82" text-anchor="middle" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">Cold Brew</text>
+    </g>
+  </g>
 
-      <!-- Badges -->
-      <rect x="14" y="14" width="90" height="22" rx="11" fill="#FFFFFF" fill-opacity="0.9"/>
-      <text x="59" y="28" text-anchor="middle" fill="#2E5C38" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="800">ORIGIN LOT 42</text>
+  <!-- Cinematic Hero Card with 4K Image -->
+  <g transform="translate(20, 230)">
+    <rect x="0" y="0" width="352" height="290" rx="24" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.06"/>
 
-      <rect x="290" y="14" width="48" height="22" rx="11" fill="#111111" fill-opacity="0.75"/>
-      <text x="314" y="28" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">★ 4.98</text>
-
-      <!-- Details -->
-      <text x="18" y="222" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="18" font-weight="800">Geisha Panama V60</text>
-      <text x="335" y="222" text-anchor="end" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="18" font-weight="800">₹380</text>
-      <text x="18" y="242" fill="#555555" font-family="Plus Jakarta Sans, sans-serif" font-size="11">Jasmine florals, Meyer lemon brightness, bergamot finish</text>
-
-      <!-- CTA -->
-      <line x1="18" y1="258" x2="335" y2="258" stroke="#000000" stroke-opacity="0.06"/>
-      <rect x="18" y="268" width="70" height="20" rx="10" fill="#F7F5F0"/>
-      <text x="53" y="281" text-anchor="middle" fill="#555555" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="700">Single Origin</text>
-
-      <rect x="225" y="264" width="110" height="26" rx="13" fill="#111111"/>
-      <text x="280" y="280" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">Select &amp; Craft</text>
+    <!-- 4K Image Media with clipPath -->
+    <g clip-path="url(#heroClip)">
+      <image x="0" y="0" width="353" height="190" preserveAspectRatio="xMidYMid slice" xlink:href="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&amp;fit=crop&amp;w=1200&amp;q=85"/>
     </g>
 
-    <!-- Minimal Pairing Voucher -->
-    <g transform="translate(20, 484)">
-      <rect x="0" y="0" width="353" height="66" rx="16" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.07"/>
-      <circle cx="0" cy="33" r="7" fill="#F7F5F0"/>
-      <circle cx="353" cy="33" r="7" fill="#F7F5F0"/>
+    <!-- Badges -->
+    <rect x="14" y="14" width="112" height="22" rx="11" fill="#FFFFFF" fill-opacity="0.92"/>
+    <text x="70" y="28" text-anchor="middle" fill="#1C3B22" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="800">ORIGIN LOT 42 • RESERVE</text>
 
-      <text x="20" y="22" fill="#9E744A" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="800" letter-spacing="1">TABLE 04 COURTESY</text>
-      <text x="20" y="40" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="13" font-weight="700">Complimentary Almond Viennoiserie</text>
-      <text x="20" y="54" fill="#8E8B85" font-family="monospace" font-size="9">CODE: KYOTO25</text>
+    <rect x="288" y="14" width="50" height="22" rx="11" fill="#1D1B16" fill-opacity="0.85"/>
+    <text x="313" y="28" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">★ 4.98</text>
 
-      <rect x="278" y="18" width="56" height="28" rx="14" fill="#F7F5F0" stroke="#000000" stroke-opacity="0.1"/>
-      <text x="306" y="35" text-anchor="middle" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">Apply</text>
+    <!-- Details -->
+    <text x="18" y="218" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="18" font-weight="800">Geisha Panama V60</text>
+    <text x="334" y="218" text-anchor="end" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="18" font-weight="800">₹380</text>
+    <text x="18" y="238" fill="#5A554E" font-family="Plus Jakarta Sans, sans-serif" font-size="11">Jasmine florals, Meyer lemon brightness, bergamot finish</text>
+
+    <!-- CTA -->
+    <line x1="18" y1="254" x2="334" y2="254" stroke="#000000" stroke-opacity="0.06"/>
+    <rect x="18" y="264" width="76" height="20" rx="10" fill="#F1ECE1"/>
+    <text x="56" y="277" text-anchor="middle" fill="#5A554E" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="700">Single Origin</text>
+
+    <rect x="224" y="260" width="110" height="26" rx="13" fill="#1C3B22"/>
+    <text x="279" y="276" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700">Select &amp; Craft</text>
+  </g>
+
+  <!-- Secondary Cinematic Card with 4K Image -->
+  <g transform="translate(20, 540)">
+    <rect x="0" y="0" width="352" height="180" rx="20" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.06"/>
+
+    <g clip-path="url(#card2Clip)">
+      <image x="0" y="0" width="353" height="120" preserveAspectRatio="xMidYMid slice" xlink:href="https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&amp;fit=crop&amp;w=1200&amp;q=85"/>
     </g>
 
-    <!-- Secondary Cinematic Card -->
-    <g transform="translate(20, 566)">
-      <rect x="0" y="0" width="353" height="180" rx="20" fill="#FFFFFF" stroke="#000000" stroke-opacity="0.06"/>
-      <rect x="0" y="0" width="353" height="120" rx="20" fill="#DCD5C8"/>
+    <text x="18" y="144" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="15" font-weight="800">Warm Almond Viennoiserie</text>
+    <text x="18" y="162" fill="#5A554E" font-family="Plus Jakarta Sans, sans-serif" font-size="11">Laminated French butter pastry with frangipane</text>
 
-      <text x="18" y="146" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="14" font-weight="800">Spanish Cortado</text>
-      <text x="18" y="162" fill="#555555" font-family="Plus Jakarta Sans, sans-serif" font-size="10">Double ristretto with micro-foamed Jersey milk</text>
+    <text x="334" y="148" text-anchor="end" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="16" font-weight="800">₹180</text>
+    <circle cx="320" cy="144" r="14" fill="#1C3B22"/>
+    <text x="320" y="149" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="16" font-weight="700">+</text>
+  </g>
 
-      <text x="290" y="152" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="15" font-weight="800">₹220</text>
-      <circle cx="325" cy="148" r="12" fill="#111111"/>
-      <text x="325" y="152" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="12" font-weight="700">+</text>
-    </g>
+  <!-- Floating Cart Dock -->
+  <g transform="translate(20, 770)">
+    <rect x="0" y="0" width="352" height="52" rx="26" fill="#FFFFFF" fill-opacity="0.95" stroke="#000000" stroke-opacity="0.08"/>
+    <rect x="14" y="14" width="58" height="24" rx="12" fill="#1D1B16"/>
+    <text x="43" y="30" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="800">2 ITEMS</text>
+    <text x="82" y="31" fill="#1D1B16" font-family="Plus Jakarta Sans, sans-serif" font-size="14" font-weight="800">₹600</text>
 
-    <!-- Floating White Dock -->
-    <g transform="translate(20, 770)">
-      <rect x="0" y="0" width="353" height="52" rx="26" fill="#FFFFFF" fill-opacity="0.94" stroke="#000000" stroke-opacity="0.08"/>
-      <rect x="14" y="14" width="58" height="24" rx="12" fill="#111111"/>
-      <text x="43" y="30" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="9" font-weight="800">2 ITEMS</text>
-      <text x="82" y="31" fill="#111111" font-family="Plus Jakarta Sans, sans-serif" font-size="14" font-weight="800">₹600</text>
-
-      <rect x="220" y="11" width="118" height="30" rx="15" fill="#2E5C38"/>
-      <text x="279" y="30" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="700">Table Order →</text>
-    </g>
+    <rect x="220" y="11" width="118" height="30" rx="15" fill="#1C3B22"/>
+    <text x="279" y="30" text-anchor="middle" fill="#FFFFFF" font-family="Plus Jakarta Sans, sans-serif" font-size="11" font-weight="700">Table Order →</text>
   </g>
 </svg>
