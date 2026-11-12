@@ -67,6 +67,12 @@
         "projectId": "7c70834f-69e9-4b5f-8bd8-a1ce5773baed"
       }
     },
-    "owner": "pranaygupta1"
+    "owner": "pranaygupta1",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7c70834f-69e9-4b5f-8bd8-a1ce5773baed"
+    }
   }
 }
