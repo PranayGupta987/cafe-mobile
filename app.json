@@ -5,7 +5,10 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "cafeapp",
+    "scheme": [
+      "cafeapp",
+      "com.googleusercontent.apps.435112311982-k7jbtohlcicukm0vcvpv80c56gk65e83"
+    ],
     "userInterfaceStyle": "light",
     "ios": {
       "bundleIdentifier": "com.cafeapp.mobile",

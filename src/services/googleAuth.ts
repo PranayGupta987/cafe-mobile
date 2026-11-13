@@ -31,6 +31,14 @@ export function getEffectiveClientId(): string {
   return GOOGLE_CONFIG.webClientId || GOOGLE_CONFIG.androidClientId || GOOGLE_CONFIG.iosClientId;
 }
 
+export function getGoogleRedirectUri(clientId: string): string {
+  if (Platform.OS === 'android' || Platform.OS === 'ios') {
+    const rawId = clientId.replace('.apps.googleusercontent.com', '');
+    return `com.googleusercontent.apps.${rawId}:/oauth2redirect`;
+  }
+  return AuthSession.makeRedirectUri({ scheme: 'cafeapp' });
+}
+
 export interface GoogleAuthResult {
   success: boolean;
   user?: any;
@@ -40,13 +48,11 @@ export interface GoogleAuthResult {
 }
 
 /**
- * Initiates the Google OAuth 2.0 flow using Expo AuthSession / WebBrowser
+ * Initiates the Google OAuth 2.0 flow using Expo AuthSession / WebBrowser with Authorization Code + PKCE
  */
 export async function promptGoogleAuth(): Promise<GoogleAuthResult> {
   const clientId = getEffectiveClientId();
-  const redirectUri = AuthSession.makeRedirectUri({
-    scheme: 'cafeapp',
-  });
+  const redirectUri = getGoogleRedirectUri(clientId);
 
   if (!clientId) {
     return {
@@ -56,23 +62,53 @@ export async function promptGoogleAuth(): Promise<GoogleAuthResult> {
   }
 
   try {
-    // Generate auth request
+    // Generate auth request with Authorization Code + PKCE
     const authRequest = new AuthSession.AuthRequest({
       clientId,
       scopes: ['openid', 'profile', 'email'],
-      responseType: AuthSession.ResponseType.Token,
+      responseType: AuthSession.ResponseType.Code,
       redirectUri,
+      usePKCE: true,
     });
 
     const result = await authRequest.promptAsync(googleDiscovery);
 
     if (result.type === 'success' && result.params) {
-      const { access_token, id_token } = result.params;
+      let idToken: string | undefined = result.params.id_token;
+      let accessToken: string | undefined = result.params.access_token;
+
+      // If we received an authorization code, exchange it via PKCE
+      if (result.params.code) {
+        try {
+          const tokenResult = await AuthSession.exchangeCodeAsync(
+            {
+              clientId,
+              code: result.params.code,
+              redirectUri,
+              extraParams: {
+                code_verifier: authRequest.codeVerifier || '',
+              },
+            },
+            googleDiscovery
+          );
+          if (tokenResult.idToken) idToken = tokenResult.idToken;
+          if (tokenResult.accessToken) accessToken = tokenResult.accessToken;
+        } catch (exchangeErr) {
+          console.error('Code exchange error:', exchangeErr);
+        }
+      }
+
+      if (!idToken && !accessToken) {
+        return {
+          success: false,
+          error: 'Failed to retrieve Google authentication tokens',
+        };
+      }
 
       // Exchange with backend
       const response = await apiClient.post<any>('/auth/google', {
-        idToken: id_token,
-        accessToken: access_token,
+        idToken: idToken || '',
+        accessToken: accessToken || '',
       });
 
       const payload = extractAuthPayload(response.data);
