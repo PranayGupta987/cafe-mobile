@@ -4,37 +4,58 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 import { useCartStore } from '@/stores/cartStore';
-import { CafeCard } from '@/components/common/Card';
 import { CafeAsyncImage } from '@/components/common/CafeAsyncImage';
 import { QuantityStepper } from '@/components/specific/QuantityStepper';
 import { VegIndicator } from '@/components/specific/VegIndicator';
 import { FloatingCartBar } from '@/components/specific/FloatingCartBar';
-import { Colors } from '@/constants/colors';
-import { Radius, Spacing, Elevation } from '@/constants/dimens';
+import { Radius } from '@/constants/dimens';
 import { formatPaise } from '@/utils/currency';
 import { ApiResponse } from '@/types/auth';
 import { MediaAssets } from '@/constants/media';
 
-const MOOD_FILTERS = [
+// Android MD3 + Kyoto Minimalist Color Tokens
+const KyotoMD3 = {
+  surface: '#F8F5F0',
+  surfaceContainer: '#F1ECE1',
+  surfaceContainerHigh: '#EAE3D5',
+  surfaceBright: '#FFFFFF',
+  onSurface: '#1D1B16',
+  onSurfaceVariant: '#5A554E',
+  outline: '#8E8B85',
+  outlineSubtle: 'rgba(0, 0, 0, 0.06)',
+  primary: '#1C3B22',
+  primaryContainer: '#CFE9D2',
+  onPrimary: '#FFFFFF',
+  secondary: '#855325',
+  secondaryContainer: '#F6E5D4',
+  gold: '#D4AF37',
+  ratingStar: '#E5A93C',
+};
+
+const CATEGORY_CHIPS = [
   { id: 'all', label: 'All Day Brews', icon: 'cafe-outline' as const },
   { id: 'pour-over', label: 'Reserve Pour-Over', icon: 'water-outline' as const },
-  { id: 'bakery', label: 'Warm Pastries', icon: 'basket-outline' as const },
+  { id: 'bakery', label: 'Warm Bakery', icon: 'basket-outline' as const },
   { id: 'cold-brew', label: 'Nitro Cold Brew', icon: 'snow-outline' as const },
-  { id: 'matcha', label: 'Ceremonial Matcha', icon: 'leaf-outline' as const },
+  { id: 'matcha', label: 'Uji Matcha', icon: 'leaf-outline' as const },
 ];
 
 export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const {
     items: cartItems,
     addItem,
@@ -46,7 +67,7 @@ export default function HomeScreen() {
 
   const totalItems = getTotalItems();
   const totalPaise = getTotalPaise();
-  const [activeMood, setActiveMood] = useState('all');
+  const [activeCategory, setActiveCategory] = useState('all');
 
   // Fetch active cafe profile
   const { data: cafeProfile } = useQuery({
@@ -71,15 +92,18 @@ export default function HomeScreen() {
     queryKey: ['featured-menu-items'],
     queryFn: async () => {
       const res = await apiClient.get<ApiResponse<any[]>>('/menu/items');
-      return (res.data.data || []).slice(0, 8);
+      return (res.data.data || []).slice(0, 10);
     },
   });
+
+  const featuredOffer = offersData?.[0];
 
   const getItemQuantity = (id: string) => {
     return cartItems.find((i) => i.menuItemId === id)?.quantity || 0;
   };
 
   const handleOpenDetail = (item: any) => {
+    Haptics.selectionAsync();
     router.push({
       pathname: '/modal/item-detail',
       params: {
@@ -96,26 +120,68 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.screenContainer}>
+      <StatusBar style="dark" />
+
+      {/* Android Top App Bar */}
+      <View style={[styles.topAppBar, { paddingTop: insets.top + (Platform.OS === 'android' ? 8 : 4) }]}>
+        <View style={styles.headerLeftCol}>
+          <Pressable
+            style={styles.tableChip}
+            android_ripple={{ color: 'rgba(28, 59, 34, 0.12)' }}
+            onPress={() => router.push('/modal/qr-scanner')}
+          >
+            <View style={styles.tablePulseDot} />
+            <Text style={styles.tableChipText}>
+              {tableNumber ? `Dine-In • Table ${tableNumber}` : 'Dine-In • Scan Table QR'}
+            </Text>
+            <Ionicons name="chevron-forward" size={12} color={KyotoMD3.primary} />
+          </Pressable>
+          <Text style={styles.brandTitleText}>
+            {cafeProfile?.name || 'Artisan Roastery'}
+          </Text>
+        </View>
+
+        <View style={styles.headerRightActions}>
+          <Pressable
+            style={styles.iconButtonMD3}
+            android_ripple={{ color: 'rgba(0,0,0,0.1)', borderless: true }}
+            onPress={() => router.push('/modal/qr-scanner')}
+          >
+            <Ionicons name="qr-code-outline" size={19} color={KyotoMD3.onSurface} />
+          </Pressable>
+          <Pressable
+            style={styles.iconButtonMD3}
+            android_ripple={{ color: 'rgba(0,0,0,0.1)', borderless: true }}
+            onPress={() => router.push('/(tabs)/orders')}
+          >
+            <Ionicons name="receipt-outline" size={19} color={KyotoMD3.onSurface} />
+          </Pressable>
+        </View>
+      </View>
+
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Story Circles / Highlights (Pinterest / Instagram Style) */}
-        <View style={styles.storiesContainer}>
+        {/* Story Circles Rail */}
+        <View style={styles.storiesSection}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.storiesScroll}
           >
             {MediaAssets.stories.map((story) => (
-              <TouchableOpacity
+              <Pressable
                 key={story.id}
-                style={styles.storyItem}
-                activeOpacity={0.8}
-                onPress={() => router.push('/(tabs)/menu')}
+                style={styles.storyBubble}
+                android_ripple={{ color: 'rgba(0,0,0,0.06)' }}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/(tabs)/menu');
+                }}
               >
-                <View style={styles.storyRing}>
+                <View style={styles.storyAvatarRing}>
                   <CafeAsyncImage
                     source={{ uri: story.image }}
                     style={styles.storyAvatar}
@@ -124,316 +190,228 @@ export default function HomeScreen() {
                     transition={200}
                   />
                 </View>
-                <Text style={styles.storyTitle} numberOfLines={1}>
+                <Text style={styles.storyLabel} numberOfLines={1}>
                   {story.title}
                 </Text>
-                <Text style={styles.storyTag}>{story.tag}</Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </ScrollView>
         </View>
 
-        {/* Search Bar Ticker Shortcut */}
-        <TouchableOpacity
-          style={styles.searchShortcutBar}
-          activeOpacity={0.9}
-          onPress={() => router.push('/(tabs)/menu')}
-        >
-          <View style={styles.searchIconBox}>
-            <Ionicons name="search" size={18} color={Colors.uberGreen} />
-          </View>
-          <Text style={styles.searchShortcutText}>Search &apos;Cold Brew&apos;, &apos;Matcha&apos;, &apos;Pastries&apos;...</Text>
-          <View style={styles.searchShortcutBadge}>
-            <Ionicons name="options-outline" size={16} color="#FFFFFF" />
-          </View>
-        </TouchableOpacity>
-
-        {/* Hero Banner Bento Card (Uber Eats Modern Green & Black Aesthetic) */}
-        <View style={styles.heroWrapper}>
-          <CafeAsyncImage
-            source={{ uri: MediaAssets.heroes.pourOver }}
-            style={styles.heroBackground}
-            borderRadius={Radius.xl}
-            contentFit="cover"
-            transition={300}
-          />
-          <LinearGradient
-            colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.92)']}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={styles.heroContent}>
-            {/* Top Micro Badges */}
-            <View style={styles.heroBadgeRow}>
-              <View style={styles.artisanBadge}>
-                <Ionicons name="sparkles" size={12} color={Colors.uberGreen} />
-                <Text style={styles.artisanBadgeText}>ARTISAN ROASTERY</Text>
-              </View>
-              <View style={styles.prepBadgeHero}>
-                <Ionicons name="flash" size={11} color="#FFD700" />
-                <Text style={styles.prepBadgeHeroText}>15-20 min</Text>
-              </View>
-              {cafeProfile?.name ? (
-                <Text style={styles.cafeNameText}>{cafeProfile.name}</Text>
-              ) : null}
-            </View>
-
-            <Text style={styles.heroHeadline}>Experience Specialty Brews</Text>
-            <Text style={styles.heroSubhead}>
-              Single-origin beans, craft pour-overs, and warm European bakes made fresh hourly.
-            </Text>
-
-            {/* Glassmorphic Table Check-In Capsule */}
-            <View style={styles.tableCapsule}>
-              <View style={styles.tableCapsuleLeft}>
-                <View style={styles.tableIconCircle}>
-                  <Ionicons
-                    name={tableNumber ? 'restaurant' : 'qr-code-outline'}
-                    size={16}
-                    color="#FFFFFF"
-                  />
-                </View>
-                <View style={{ marginLeft: 10 }}>
-                  <Text style={styles.tableCapsuleTitle}>
-                    {tableNumber ? `Dine-In • Table ${tableNumber}` : 'Dine-In Check-In'}
-                  </Text>
-                  <Text style={styles.tableCapsuleSubtitle}>
-                    {tableNumber
-                      ? 'Orders served directly to your seat'
-                      : 'Scan table QR for contactless service'}
-                  </Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.tableCapsuleBtn}
-                onPress={() => router.push('/modal/qr-scanner')}
-              >
-                <Text style={styles.tableCapsuleBtnText}>
-                  {tableNumber ? 'Change' : 'Scan QR'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-
-        {/* Quick Action Navigation Grid */}
-        <View style={styles.actionGrid}>
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => router.push('/modal/reservations')}
-          >
-            <View style={[styles.actionIconBox, { backgroundColor: Colors.uberGreenContainer }]}>
-              <Ionicons name="calendar" size={22} color={Colors.uberGreenDark} />
-            </View>
-            <Text style={styles.actionCardTitle}>Reserve Table</Text>
-            <Text style={styles.actionCardSub}>Instant seat pass</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => router.push('/(tabs)/menu')}
-          >
-            <View style={[styles.actionIconBox, { backgroundColor: '#E8F5E9' }]}>
-              <Ionicons name="restaurant" size={22} color="#2E7D32" />
-            </View>
-            <Text style={styles.actionCardTitle}>Curated Menu</Text>
-            <Text style={styles.actionCardSub}>30+ Handcrafted</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => router.push('/(tabs)/offers')}
-          >
-            <View style={[styles.actionIconBox, { backgroundColor: '#FFF8E1' }]}>
-              <Ionicons name="pricetag" size={22} color="#F57F17" />
-            </View>
-            <Text style={styles.actionCardTitle}>Exclusive Deals</Text>
-            <Text style={styles.actionCardSub}>Save up to 25%</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Mood Filter Chips */}
-        <View style={styles.moodSection}>
+        {/* MD3 Category Pill Carousel */}
+        <View style={styles.categoriesSection}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.moodScroll}
+            contentContainerStyle={styles.categoriesScroll}
           >
-            {MOOD_FILTERS.map((mood) => {
-              const active = activeMood === mood.id;
+            {CATEGORY_CHIPS.map((cat) => {
+              const isActive = activeCategory === cat.id;
               return (
-                <TouchableOpacity
-                  key={mood.id}
-                  style={[styles.moodChip, active && styles.moodChipActive]}
+                <Pressable
+                  key={cat.id}
+                  style={[styles.categoryChip, isActive && styles.categoryChipActive]}
+                  android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
                   onPress={() => {
                     Haptics.selectionAsync();
-                    setActiveMood(mood.id);
+                    setActiveCategory(cat.id);
                   }}
                 >
                   <Ionicons
-                    name={mood.icon}
+                    name={cat.icon}
                     size={14}
-                    color={active ? '#FFFFFF' : Colors.textSecondary}
+                    color={isActive ? KyotoMD3.onPrimary : KyotoMD3.onSurfaceVariant}
                     style={{ marginRight: 6 }}
                   />
-                  <Text style={[styles.moodChipText, active && styles.moodChipTextActive]}>
-                    {mood.label}
+                  <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
+                    {cat.label}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </ScrollView>
         </View>
 
-        {/* Special Offers Carousel */}
-        {offersData && offersData.length > 0 ? (
-          <View style={styles.sectionContainer}>
-            <View style={styles.sectionHeader}>
-              <View>
-                <Text style={styles.sectionTitle}>Exclusive Deals</Text>
-                <Text style={styles.sectionSubtitle}>Handcrafted perks for your table</Text>
+        {/* Full-Bleed Cinematic Hero Card */}
+        <Pressable
+          style={styles.heroCard}
+          android_ripple={{ color: 'rgba(0,0,0,0.04)' }}
+          onPress={() => router.push('/(tabs)/menu')}
+        >
+          <View style={styles.heroMediaContainer}>
+            <CafeAsyncImage
+              source={{ uri: MediaAssets.heroes.pourOver }}
+              style={styles.heroMediaImage}
+              borderRadius={Radius.xl}
+              contentFit="cover"
+              transition={300}
+            />
+            {/* Origin & Prep Floating Badges */}
+            <View style={styles.heroBadgeTopLeft}>
+              <Text style={styles.heroBadgeText}>ORIGIN LOT 42 • RESERVE</Text>
+            </View>
+            <View style={styles.heroRatingBadge}>
+              <Ionicons name="star" size={11} color={KyotoMD3.ratingStar} />
+              <Text style={styles.heroRatingText}>4.98</Text>
+            </View>
+          </View>
+
+          <View style={styles.heroContentArea}>
+            <View style={styles.heroTitleRow}>
+              <Text style={styles.heroItemTitle}>Geisha Panama V60</Text>
+              <Text style={styles.heroItemPrice}>₹380</Text>
+            </View>
+            <Text style={styles.heroDescription}>
+              Hand-harvested Boquete micro-lot. Notes of white jasmine florals, Meyer lemon sweetness, and delicate bergamot finish.
+            </Text>
+            <View style={styles.heroFooterRow}>
+              <View style={styles.heroMetaPills}>
+                <View style={styles.metaMicroPill}>
+                  <Text style={styles.metaMicroPillText}>Single Origin</Text>
+                </View>
+                <View style={styles.metaMicroPill}>
+                  <Text style={styles.metaMicroPillText}>12-15 min brew</Text>
+                </View>
               </View>
-              <TouchableOpacity onPress={() => router.push('/(tabs)/offers')}>
-                <Text style={styles.seeAllText}>View All</Text>
+              <TouchableOpacity
+                style={styles.heroCraftBtn}
+                onPress={() => router.push('/(tabs)/menu')}
+              >
+                <Text style={styles.heroCraftBtnText}>Select &amp; Craft</Text>
+                <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
+          </View>
+        </Pressable>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.offersScroll}
-            >
-              {offersData.map((offer) => (
-                <TouchableOpacity
-                  key={offer.id}
-                  style={styles.offerCard}
-                  activeOpacity={0.9}
-                  onPress={() => router.push('/(tabs)/offers')}
+        {/* Minimalist Japanese Courtesy Voucher */}
+        <View style={styles.voucherCard}>
+          {/* Perforated edge cuts */}
+          <View style={[styles.perforationHole, styles.holeLeft]} />
+          <View style={[styles.perforationHole, styles.holeRight]} />
+
+          <View style={styles.voucherLeft}>
+            <Text style={styles.voucherEyebrow}>
+              {tableNumber ? `TABLE ${tableNumber} COURTESY` : 'DINE-IN COURTESY'}
+            </Text>
+            <Text style={styles.voucherHeading}>
+              {featuredOffer?.title || 'Complimentary Almond Viennoiserie'}
+            </Text>
+            <Text style={styles.voucherCode}>
+              {`PROMO CODE: ${featuredOffer?.code || 'KYOTO25'}`}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.voucherApplyBtn}
+            onPress={() => {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }}
+          >
+            <Text style={styles.voucherApplyBtnText}>Apply</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Section Heading: Signature Creations */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionHeadingTitle}>Signature Creations</Text>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/menu')}>
+            <Text style={styles.sectionHeadingLink}>Explore All →</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Cinematic Visual-Heavy Feed */}
+        {itemsLoading ? (
+          <ActivityIndicator size="small" color={KyotoMD3.primary} style={{ marginTop: 30 }} />
+        ) : (
+          <View style={styles.cinematicFeedList}>
+            {menuItemsData?.map((item) => {
+              const qty = getItemQuantity(item.id);
+              const imageUrl = item.imageUrl || MediaAssets.fallbackByKeyword(item.name);
+
+              return (
+                <Pressable
+                  key={item.id}
+                  style={styles.cinematicItemCard}
+                  android_ripple={{ color: 'rgba(0,0,0,0.03)' }}
+                  onPress={() => handleOpenDetail(item)}
                 >
-                  <LinearGradient
-                    colors={['#000000', '#1C1C1E']}
-                    style={StyleSheet.absoluteFill}
-                  />
-                  <View style={styles.offerCardHeader}>
-                    <View style={styles.offerDiscountBadge}>
-                      <Text style={styles.offerDiscountText}>
-                        {offer.discountType === 'PERCENTAGE'
-                          ? `${offer.discountValue}% OFF`
-                          : `₹${offer.discountValue / 100} OFF`}
+                  <View style={styles.cinematicMediaWrap}>
+                    <CafeAsyncImage
+                      source={{ uri: imageUrl }}
+                      style={styles.cinematicItemImage}
+                      borderRadius={Radius.lg}
+                      contentFit="cover"
+                      transition={250}
+                    />
+                    <View style={styles.cinematicVegBadge}>
+                      <VegIndicator isVeg={item.isVeg} size={13} />
+                    </View>
+                    <View style={styles.cinematicRatingBadge}>
+                      <Ionicons name="star" size={10} color={KyotoMD3.ratingStar} />
+                      <Text style={styles.cinematicRatingText}>{item.rating || '4.9'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.cinematicCardMeta}>
+                    <View style={styles.cinematicMetaLeft}>
+                      <Text style={styles.cinematicTitle} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.cinematicDescription} numberOfLines={2}>
+                        {item.description}
                       </Text>
                     </View>
-                    <Ionicons name="sparkles" size={16} color={Colors.uberGreen} />
+
+                    <View style={styles.cinematicMetaRight}>
+                      <Text style={styles.cinematicPrice}>
+                        {formatPaise(item.pricePaise)}
+                      </Text>
+
+                      {qty === 0 ? (
+                        <TouchableOpacity
+                          style={styles.cinematicAddFab}
+                          activeOpacity={0.8}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            addItem({
+                              menuItemId: item.id,
+                              name: item.name,
+                              pricePaise: item.pricePaise,
+                              imageUrl,
+                              isVeg: item.isVeg,
+                            });
+                          }}
+                        >
+                          <Ionicons name="add" size={18} color="#FFFFFF" />
+                        </TouchableOpacity>
+                      ) : (
+                        <View style={styles.stepperWrap}>
+                          <QuantityStepper
+                            quantity={qty}
+                            onIncrement={() =>
+                              addItem({
+                                menuItemId: item.id,
+                                name: item.name,
+                                pricePaise: item.pricePaise,
+                                imageUrl,
+                                isVeg: item.isVeg,
+                              })
+                            }
+                            onDecrement={() => decrementItem(item.id)}
+                          />
+                        </View>
+                      )}
+                    </View>
                   </View>
-                  <Text style={styles.offerCardTitle} numberOfLines={1}>
-                    {offer.title}
-                  </Text>
-                  <View style={styles.offerCodePill}>
-                    <Text style={styles.offerCodeText}>CODE: {offer.code}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                </Pressable>
+              );
+            })}
           </View>
-        ) : null}
-
-        {/* Chef's Curated Specials with Media Cards */}
-        <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeader}>
-            <View>
-              <Text style={styles.sectionTitle}>Chef&apos;s Signature Picks</Text>
-              <Text style={styles.sectionSubtitle}>Pairings recommended by our master baristas</Text>
-            </View>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/menu')}>
-              <Text style={styles.seeAllText}>Full Menu</Text>
-            </TouchableOpacity>
-          </View>
-
-          {itemsLoading ? (
-            <ActivityIndicator size="small" color={Colors.uberGreen} style={{ marginTop: 20 }} />
-          ) : (
-            <View style={styles.specialsList}>
-              {menuItemsData?.map((item) => {
-                const qty = getItemQuantity(item.id);
-                const imageUrl = item.imageUrl || MediaAssets.fallbackByKeyword(item.name);
-
-                return (
-                  <CafeCard key={item.id} variant="elevated" style={styles.mediaItemCard}>
-                    <TouchableOpacity
-                      activeOpacity={0.95}
-                      onPress={() => handleOpenDetail(item)}
-                      style={styles.cardTouchWrapper}
-                    >
-                      {/* Left: Food Photography */}
-                      <View style={styles.imageBox}>
-                        <CafeAsyncImage
-                          source={{ uri: imageUrl }}
-                          style={styles.itemImage}
-                          borderRadius={Radius.lg}
-                          contentFit="cover"
-                          transition={250}
-                        />
-                        <View style={styles.vegIndicatorFloating}>
-                          <VegIndicator isVeg={item.isVeg} size={12} />
-                        </View>
-                      </View>
-
-                      {/* Right: Item Metadata & Stepper */}
-                      <View style={styles.itemContent}>
-                        <View style={styles.itemMetaTop}>
-                          <View style={styles.ratingBadge}>
-                            <Ionicons name="star" size={10} color={Colors.ratingGold} />
-                            <Text style={styles.ratingText}>{item.rating || '4.8'}</Text>
-                          </View>
-                          <View style={styles.prepBadge}>
-                            <Ionicons name="flash-outline" size={10} color={Colors.uberGreen} />
-                            <Text style={styles.prepText}>{item.prepTimeMinutes ? `${item.prepTimeMinutes}m` : '15 mins'}</Text>
-                          </View>
-                          {item.isSpicy ? (
-                            <View style={styles.spicyBadge}>
-                              <Ionicons name="flame" size={10} color={Colors.error} />
-                              <Text style={styles.spicyText}>Spicy</Text>
-                            </View>
-                          ) : null}
-                        </View>
-
-                        <Text style={styles.itemName} numberOfLines={1}>
-                          {item.name}
-                        </Text>
-                        <Text style={styles.itemDescription} numberOfLines={2}>
-                          {item.description}
-                        </Text>
-
-                        <View style={styles.priceStepperRow}>
-                          <Text style={styles.itemPrice}>
-                            {formatPaise(item.pricePaise)}
-                          </Text>
-
-                          <View style={styles.stepperContainer}>
-                            <QuantityStepper
-                              quantity={qty}
-                              onIncrement={() =>
-                                addItem({
-                                  menuItemId: item.id,
-                                  name: item.name,
-                                  pricePaise: item.pricePaise,
-                                  imageUrl,
-                                  isVeg: item.isVeg,
-                                })
-                              }
-                              onDecrement={() => decrementItem(item.id)}
-                            />
-                          </View>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  </CafeCard>
-                );
-              })}
-            </View>
-          )}
-        </View>
+        )}
       </ScrollView>
 
-      {/* Floating Cart Bar (Above TabBar) */}
+      {/* Floating Bottom Cart Dock */}
       <FloatingCartBar
         totalItems={totalItems}
         totalPaise={totalPaise}
@@ -445,455 +423,451 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screenContainer: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: KyotoMD3.surface,
   },
-  scrollContent: {
-    paddingBottom: 130,
-  },
-  storiesContainer: {
-    backgroundColor: Colors.surface,
-    paddingVertical: Spacing.sm,
+  topAppBar: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    backgroundColor: KyotoMD3.surface,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: KyotoMD3.outlineSubtle,
+    zIndex: 10,
   },
-  storiesScroll: {
-    paddingHorizontal: Spacing.base,
-    gap: 16,
+  headerLeftCol: {
+    flexDirection: 'column',
   },
-  storyItem: {
-    alignItems: 'center',
-    width: 72,
-  },
-  storyRing: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    padding: 2.5,
-    borderWidth: 2.5,
-    borderColor: Colors.uberGreen,
-    backgroundColor: Colors.surface,
-    ...Elevation.sm,
-  },
-  searchShortcutBar: {
-    marginHorizontal: Spacing.base,
-    marginTop: Spacing.md,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.full,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+  tableChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    ...Elevation.sm,
+    gap: 6,
+    backgroundColor: KyotoMD3.primaryContainer,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: Radius.full,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
   },
-  searchIconBox: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: Colors.uberGreenContainer,
+  tablePulseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: KyotoMD3.primary,
+  },
+  tableChipText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: KyotoMD3.primary,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  brandTitleText: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.6,
+    color: KyotoMD3.onSurface,
+  },
+  headerRightActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  iconButtonMD3: {
+    width: 38,
+    height: 38,
+    borderRadius: Radius.full,
+    backgroundColor: KyotoMD3.surfaceContainer,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    ...Platform.select({
+      android: { elevation: 1 },
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+      },
+    }),
   },
-  searchShortcutText: {
-    flex: 1,
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontWeight: '500',
+  scrollContent: {
+    paddingTop: 8,
   },
-  searchShortcutBadge: {
-    backgroundColor: Colors.uberBlack,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  storiesSection: {
+    paddingVertical: 12,
+  },
+  storiesScroll: {
+    paddingHorizontal: 20,
+    gap: 14,
+  },
+  storyBubble: {
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 5,
+  },
+  storyAvatarRing: {
+    width: 64,
+    height: 64,
+    borderRadius: Radius.full,
+    padding: 2,
+    backgroundColor: KyotoMD3.surfaceContainerHigh,
+    ...Platform.select({
+      android: { elevation: 1 },
+    }),
   },
   storyAvatar: {
     width: '100%',
     height: '100%',
-    borderRadius: 28,
   },
-  storyTitle: {
+  storyLabel: {
     fontSize: 11,
+    fontWeight: '600',
+    color: KyotoMD3.onSurfaceVariant,
+    maxWidth: 64,
+    textAlign: 'center',
+  },
+  categoriesSection: {
+    paddingBottom: 14,
+  },
+  categoriesScroll: {
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: Radius.md,
+    backgroundColor: KyotoMD3.surfaceBright,
+    borderWidth: 1,
+    borderColor: KyotoMD3.outlineSubtle,
+    ...Platform.select({
+      android: { elevation: 1 },
+    }),
+  },
+  categoryChipActive: {
+    backgroundColor: KyotoMD3.primary,
+    borderColor: KyotoMD3.primary,
+    ...Platform.select({
+      android: { elevation: 2 },
+    }),
+  },
+  categoryChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: KyotoMD3.onSurfaceVariant,
+  },
+  categoryChipTextActive: {
+    color: KyotoMD3.onPrimary,
     fontWeight: '700',
-    color: Colors.textPrimary,
-    marginTop: 4,
-    textAlign: 'center',
   },
-  storyTag: {
-    fontSize: 9,
-    color: Colors.textMuted,
-    textAlign: 'center',
-  },
-  heroWrapper: {
-    margin: Spacing.base,
+  heroCard: {
+    marginHorizontal: 20,
+    marginBottom: 20,
     borderRadius: Radius.xl,
+    backgroundColor: KyotoMD3.surfaceBright,
+    borderWidth: 1,
+    borderColor: KyotoMD3.outlineSubtle,
     overflow: 'hidden',
-    height: 260,
-    position: 'relative',
-    ...Elevation.md,
+    ...Platform.select({
+      android: { elevation: 3 },
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 16,
+      },
+    }),
   },
-  heroBackground: {
+  heroMediaContainer: {
+    width: '100%',
+    height: 210,
+    position: 'relative',
+  },
+  heroMediaImage: {
     width: '100%',
     height: '100%',
   },
-  heroContent: {
+  heroBadgeTopLeft: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: Spacing.lg,
-    justifyContent: 'flex-end',
+    top: 14,
+    left: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: Radius.full,
   },
-  heroBadgeRow: {
+  heroBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: KyotoMD3.primary,
+    letterSpacing: 0.8,
+  },
+  heroRatingBadge: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    backgroundColor: 'rgba(29, 27, 22, 0.85)',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: Radius.full,
+  },
+  heroRatingText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  heroContentArea: {
+    padding: 18,
+  },
+  heroTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
     marginBottom: 4,
   },
-  artisanBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-    gap: 4,
-  },
-  artisanBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
+  heroItemTitle: {
+    fontSize: 19,
     fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  prepBadgeHero: {
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-  },
-  prepBadgeHeroText: {
-    color: '#FFD700',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  cafeNameText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '600',
-    opacity: 0.8,
-  },
-  heroHeadline: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: '900',
+    color: KyotoMD3.onSurface,
     letterSpacing: -0.5,
-    marginTop: 2,
   },
-  heroSubhead: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 12,
-    marginTop: 2,
-    lineHeight: 16,
-  },
-  tableCapsule: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(18,18,18,0.85)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    borderRadius: Radius.lg,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginTop: Spacing.md,
-  },
-  tableCapsuleLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  tableIconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.uberGreen,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tableCapsuleTitle: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  tableCapsuleSubtitle: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 10,
-  },
-  tableCapsuleBtn: {
-    backgroundColor: Colors.uberGreen,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.full,
-  },
-  tableCapsuleBtnText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  actionGrid: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.base,
-    gap: 10,
-  },
-  actionCard: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    padding: Spacing.md,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    ...Elevation.sm,
-  },
-  actionIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  actionCardTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: Colors.textPrimary,
-    textAlign: 'center',
-  },
-  actionCardSub: {
-    fontSize: 9,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    marginTop: 1,
-  },
-  moodSection: {
-    marginTop: Spacing.lg,
-  },
-  moodScroll: {
-    paddingHorizontal: Spacing.base,
-    gap: 8,
-  },
-  moodChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  moodChipActive: {
-    backgroundColor: Colors.uberGreen,
-    borderColor: Colors.uberGreen,
-  },
-  moodChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-  },
-  moodChipTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-  sectionContainer: {
-    marginTop: Spacing.xl,
-    paddingHorizontal: Spacing.base,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginBottom: Spacing.md,
-  },
-  sectionTitle: {
+  heroItemPrice: {
     fontSize: 18,
     fontWeight: '800',
-    color: Colors.textPrimary,
-    letterSpacing: -0.3,
+    color: KyotoMD3.onSurface,
   },
-  sectionSubtitle: {
+  heroDescription: {
     fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 1,
+    color: KyotoMD3.onSurfaceVariant,
+    lineHeight: 18,
+    marginBottom: 16,
   },
-  seeAllText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.uberGreenDark,
-  },
-  offersScroll: {
-    gap: 12,
-    paddingBottom: 4,
-  },
-  offerCard: {
-    width: 200,
-    height: 110,
-    borderRadius: Radius.lg,
-    padding: Spacing.md,
-    justifyContent: 'space-between',
-    overflow: 'hidden',
-    position: 'relative',
-    borderWidth: 1.5,
-    borderColor: Colors.uberGreen,
-    ...Elevation.md,
-  },
-  offerCardHeader: {
+  heroFooterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: KyotoMD3.outlineSubtle,
   },
-  offerDiscountBadge: {
-    backgroundColor: Colors.uberGreen,
+  heroMetaPills: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  metaMicroPill: {
+    backgroundColor: KyotoMD3.surfaceContainer,
+    paddingVertical: 4,
     paddingHorizontal: 8,
-    paddingVertical: 3,
     borderRadius: Radius.full,
   },
-  offerDiscountText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  offerCardTitle: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  offerCodePill: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: Radius.xs,
-  },
-  offerCodeText: {
-    color: '#FFFFFF',
+  metaMicroPillText: {
     fontSize: 10,
+    fontWeight: '600',
+    color: KyotoMD3.onSurfaceVariant,
+  },
+  heroCraftBtn: {
+    backgroundColor: KyotoMD3.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: Radius.full,
+    ...Platform.select({
+      android: { elevation: 1 },
+    }),
+  },
+  heroCraftBtnText: {
+    fontSize: 11,
     fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  voucherCard: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+    borderRadius: Radius.md,
+    backgroundColor: KyotoMD3.surfaceBright,
+    borderWidth: 1,
+    borderColor: KyotoMD3.outlineSubtle,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    position: 'relative',
+    ...Platform.select({
+      android: { elevation: 1 },
+    }),
+  },
+  perforationHole: {
+    position: 'absolute',
+    top: '50%',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: KyotoMD3.surface,
+    borderWidth: 1,
+    borderColor: KyotoMD3.outlineSubtle,
+  },
+  holeLeft: {
+    left: -7,
+    marginTop: -7,
+  },
+  holeRight: {
+    right: -7,
+    marginTop: -7,
+  },
+  voucherLeft: {
+    flexDirection: 'column',
+    gap: 2,
+  },
+  voucherEyebrow: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: KyotoMD3.secondary,
+    textTransform: 'uppercase',
+  },
+  voucherHeading: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: KyotoMD3.onSurface,
+  },
+  voucherCode: {
+    fontSize: 10,
+    color: KyotoMD3.outline,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     letterSpacing: 0.5,
   },
-  specialsList: {
-    gap: 12,
+  voucherApplyBtn: {
+    backgroundColor: KyotoMD3.surfaceContainer,
+    borderWidth: 1,
+    borderColor: KyotoMD3.outlineSubtle,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: Radius.full,
   },
-  mediaItemCard: {
-    backgroundColor: Colors.surface,
-    padding: 0,
-    overflow: 'hidden',
+  voucherApplyBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: KyotoMD3.onSurface,
+  },
+  sectionHeaderRow: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+  },
+  sectionHeadingTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    color: KyotoMD3.onSurface,
+  },
+  sectionHeadingLink: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: KyotoMD3.primary,
+  },
+  cinematicFeedList: {
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  cinematicItemCard: {
+    backgroundColor: KyotoMD3.surfaceBright,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  cardTouchWrapper: {
-    flexDirection: 'row',
-    padding: Spacing.md,
-  },
-  imageBox: {
-    width: 104,
-    height: 104,
-    borderRadius: Radius.md,
+    borderColor: KyotoMD3.outlineSubtle,
     overflow: 'hidden',
-    position: 'relative',
-    backgroundColor: Colors.background,
+    ...Platform.select({
+      android: { elevation: 2 },
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+      },
+    }),
   },
-  itemImage: {
+  cinematicMediaWrap: {
+    width: '100%',
+    height: 170,
+    position: 'relative',
+  },
+  cinematicItemImage: {
     width: '100%',
     height: '100%',
   },
-  vegIndicatorFloating: {
+  cinematicVegBadge: {
     position: 'absolute',
-    top: 6,
-    left: 6,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    padding: 3,
-    borderRadius: 4,
+    top: 10,
+    left: 10,
   },
-  itemContent: {
-    flex: 1,
-    marginLeft: Spacing.md,
-    justifyContent: 'space-between',
-  },
-  itemMetaTop: {
+  cinematicRatingBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(29, 27, 22, 0.85)',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 3,
+    paddingVertical: 3,
+    paddingHorizontal: 7,
+    borderRadius: Radius.full,
   },
-  ratingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.uberGreenContainer,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    gap: 2,
-  },
-  ratingText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: Colors.uberGreenDark,
-  },
-  prepBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surfaceVariant,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    gap: 2,
-  },
-  prepText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-  },
-  spicyBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.errorContainer,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    gap: 2,
-  },
-  spicyText: {
+  cinematicRatingText: {
     fontSize: 10,
     fontWeight: '700',
-    color: Colors.error,
+    color: '#FFFFFF',
   },
-  itemName: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: Colors.textPrimary,
-  },
-  itemDescription: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    lineHeight: 16,
-  },
-  priceStepperRow: {
+  cinematicCardMeta: {
+    padding: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 4,
   },
-  itemPrice: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Colors.textPrimary,
+  cinematicMetaLeft: {
+    flex: 1,
+    marginRight: 12,
   },
-  stepperContainer: {
+  cinematicTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: KyotoMD3.onSurface,
+    marginBottom: 3,
+  },
+  cinematicDescription: {
+    fontSize: 11,
+    color: KyotoMD3.onSurfaceVariant,
+    lineHeight: 16,
+  },
+  cinematicMetaRight: {
     alignItems: 'flex-end',
+    gap: 6,
+  },
+  cinematicPrice: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: KyotoMD3.onSurface,
+  },
+  cinematicAddFab: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: KyotoMD3.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      android: { elevation: 1 },
+    }),
+  },
+  stepperWrap: {
+    marginTop: 2,
   },
 });

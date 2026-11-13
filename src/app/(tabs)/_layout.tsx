@@ -1,49 +1,13 @@
 import React from 'react';
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { Colors } from '@/constants/colors';
-import { useCartStore } from '@/stores/cartStore';
-
-function HeaderCartButton() {
-  const router = useRouter();
-  const totalItems = useCartStore((s) => s.getTotalItems());
-
-  return (
-    <TouchableOpacity
-      style={styles.headerCartButton}
-      onPress={() => router.push('/modal/cart')}
-      accessibilityRole="button"
-      accessibilityLabel={`Shopping cart, ${totalItems} items`}
-    >
-      <Ionicons name="cart-outline" size={24} color={Colors.textPrimary} />
-      {totalItems > 0 ? (
-        <View style={styles.headerBadge}>
-          <Text style={styles.headerBadgeText}>{totalItems}</Text>
-        </View>
-      ) : null}
-    </TouchableOpacity>
-  );
-}
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: {
-          backgroundColor: Colors.surface,
-          shadowColor: '#000000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
-          shadowRadius: 2,
-          elevation: 1,
-        },
-        headerTintColor: Colors.textPrimary,
-        headerTitleStyle: {
-          fontWeight: '800',
-          fontSize: 18,
-        },
-        headerRight: () => <HeaderCartButton />,
+        headerShown: false,
         tabBarActiveTintColor: Colors.uberGreen,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarStyle: {
@@ -63,7 +27,6 @@ export default function TabsLayout() {
         name="home"
         options={{
           title: 'Home',
-          headerTitle: 'Café App',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'cafe' : 'cafe-outline'} size={24} color={color as string} />
           ),
@@ -108,30 +71,3 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  headerCartButton: {
-    marginRight: 16,
-    padding: 6,
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: Colors.uberGreen,
-    borderRadius: 9,
-    minWidth: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-  },
-  headerBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-});

@@ -4,25 +4,56 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
+  Platform,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 import { useCartStore } from '@/stores/cartStore';
+import { CafeAsyncImage } from '@/components/common/CafeAsyncImage';
 import { FloatingCartBar } from '@/components/specific/FloatingCartBar';
-import { Colors } from '@/constants/colors';
-import { Radius, Spacing, Elevation } from '@/constants/dimens';
-import { Typography } from '@/constants/typography';
+import { Radius } from '@/constants/dimens';
 import { formatPaise } from '@/utils/currency';
 import { ApiResponse } from '@/types/auth';
+import { MediaAssets } from '@/constants/media';
+
+// Android MD3 + Kyoto Minimalist Color Tokens
+const KyotoMD3 = {
+  surface: '#F8F5F0',
+  surfaceContainer: '#F1ECE1',
+  surfaceContainerHigh: '#EAE3D5',
+  surfaceBright: '#FFFFFF',
+  onSurface: '#1D1B16',
+  onSurfaceVariant: '#5A554E',
+  outline: '#8E8B85',
+  outlineSubtle: 'rgba(0, 0, 0, 0.06)',
+  primary: '#1C3B22',
+  primaryContainer: '#CFE9D2',
+  onPrimary: '#FFFFFF',
+  secondary: '#855325',
+  secondaryContainer: '#F6E5D4',
+  ratingStar: '#E5A93C',
+};
+
+// Rich Imagery Mapping for Roastery Perks
+const PERK_MEDIA = [
+  MediaAssets.heroes.pourOver,
+  MediaAssets.heroes.bakeryDisplay,
+  MediaAssets.heroes.coldBrew,
+  MediaAssets.heroes.latteArt,
+];
 
 export default function OffersScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const {
     appliedOffer,
     applyOffer,
@@ -33,7 +64,7 @@ export default function OffersScreen() {
     tableNumber,
   } = useCartStore();
 
-  const { data: offers, isLoading } = useQuery({
+  const { data: offers, isLoading, refetch } = useQuery({
     queryKey: ['all-offers'],
     queryFn: async () => {
       const res = await apiClient.get<ApiResponse<any[]>>('/offers');
@@ -72,76 +103,106 @@ export default function OffersScreen() {
     });
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('Coupon Applied 🎉', `Code ${offer.code} successfully applied to your basket!`);
+    Alert.alert('Perk Applied 🎉', `Voucher ${offer.code} successfully added to your order.`);
   };
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={[Typography.h2, { color: Colors.textPrimary, fontWeight: '900' }]}>
-            Exclusive Deals & Vouchers
-          </Text>
-          <Text style={[Typography.bodyMedium, { color: Colors.textSecondary, marginTop: 4 }]}>
-            Redeem artisanal promo perks to save on craft pour-overs and warm bakes.
-          </Text>
+      <StatusBar style="dark" />
+
+      {/* Top Header Bar */}
+      <View style={[styles.topAppBar, { paddingTop: insets.top + (Platform.OS === 'android' ? 8 : 4) }]}>
+        <View style={styles.headerTitleCol}>
+          <View style={styles.tableChip}>
+            <View style={styles.tableDot} />
+            <Text style={styles.tableChipText}>Kyoto Member Rewards</Text>
+          </View>
+          <Text style={styles.brandTitleText}>Exclusive Vouchers</Text>
         </View>
 
+        <Pressable
+          style={styles.iconButtonMD3}
+          android_ripple={{ color: 'rgba(0,0,0,0.1)', borderless: true }}
+          onPress={() => refetch()}
+        >
+          <Ionicons name="refresh-outline" size={18} color={KyotoMD3.onSurface} />
+        </Pressable>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 110 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.subtitleIntro}>
+          Redeem artisanal member perks to save on single-origin pour-overs, cold steeps, and warm viennoiseries.
+        </Text>
+
         {isLoading ? (
-          <ActivityIndicator size="large" color={Colors.uberGreen} style={{ marginTop: 40 }} />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={KyotoMD3.primary} />
+          </View>
         ) : !offers || offers.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="pricetag-outline" size={48} color={Colors.textMuted} />
-            <Text style={[Typography.bodyMedium, { color: Colors.textMuted, marginTop: Spacing.md }]}>
-              No vouchers active at the moment. Check back soon!
-            </Text>
+            <Ionicons name="pricetag-outline" size={48} color={KyotoMD3.outline} />
+            <Text style={styles.emptyHeading}>No vouchers available right now</Text>
+            <Text style={styles.emptySub}>Check back soon for fresh seasonal roastery perks.</Text>
           </View>
         ) : (
-          offers.map((offer) => {
+          offers.map((offer, index) => {
             const isApplied = appliedOffer?.code === offer.code;
+            const heroImage = PERK_MEDIA[index % PERK_MEDIA.length];
 
             return (
-              <View key={offer.id} style={styles.ticketContainer}>
-                {/* Perforated Side Notches */}
-                <View style={styles.notchLeft} />
-                <View style={styles.notchRight} />
+              <View key={offer.id} style={styles.ticketCard}>
+                {/* 4K Visual Banner */}
+                <View style={styles.ticketMediaWrap}>
+                  <CafeAsyncImage
+                    source={{ uri: heroImage }}
+                    style={styles.ticketMedia}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                  <View style={styles.discountTagBadge}>
+                    <Text style={styles.discountTagText}>
+                      {offer.discountType === 'PERCENTAGE'
+                        ? `${offer.discountValue}% OFF`
+                        : `₹${offer.discountValue / 100} OFF`}
+                    </Text>
+                  </View>
+                </View>
 
-                <View style={styles.ticketInner}>
-                  <View style={styles.cardHeader}>
-                    <View style={styles.couponTag}>
-                      <Ionicons name="pricetag" size={12} color={Colors.uberGreenDark} style={{ marginRight: 4 }} />
-                      <Text style={styles.couponCode}>{offer.code}</Text>
+                {/* Perforated Concave Cuts */}
+                <View style={[styles.perforationCircle, styles.circleLeft]} />
+                <View style={[styles.perforationCircle, styles.circleRight]} />
+
+                {/* Ticket Details Body */}
+                <View style={styles.ticketBody}>
+                  <View style={styles.ticketHeaderRow}>
+                    <View style={styles.codeCapsule}>
+                      <Ionicons name="pricetag" size={11} color={KyotoMD3.primary} style={{ marginRight: 4 }} />
+                      <Text style={styles.codeCapsuleText}>{offer.code}</Text>
                     </View>
-                    <View style={styles.discountBadge}>
-                      <Text style={styles.discountHighlight}>
-                        {offer.discountType === 'PERCENTAGE'
-                          ? `${offer.discountValue}% OFF`
-                          : `₹${offer.discountValue / 100} FLAT OFF`}
-                      </Text>
-                    </View>
+                    <Text style={styles.microTerms}>
+                      Min: {formatPaise(offer.minOrderAmountPaise)}
+                    </Text>
                   </View>
 
-                  <Text style={[Typography.h3, styles.offerTitle]}>{offer.title}</Text>
+                  <Text style={styles.offerTitle}>{offer.title}</Text>
                   {offer.description ? (
-                    <Text style={[Typography.bodyMedium, styles.offerDesc]}>
+                    <Text style={styles.offerDesc} numberOfLines={2}>
                       {offer.description}
                     </Text>
                   ) : null}
 
                   {/* Dashed Perforation Line */}
-                  <View style={styles.dashedPerforation} />
+                  <View style={styles.dashedLine} />
 
-                  <View style={styles.termsRow}>
-                    <Ionicons name="shield-checkmark-outline" size={14} color={Colors.uberGreenDark} />
-                    <Text style={[Typography.bodySmall, styles.termsText]}>
-                      Min order: {formatPaise(offer.minOrderAmountPaise)}
-                      {offer.maxDiscountAmountPaise
-                        ? ` • Max discount: ${formatPaise(offer.maxDiscountAmountPaise)}`
-                        : ''}
-                    </Text>
-                  </View>
+                  <View style={styles.ticketFooterRow}>
+                    <View style={styles.secureBadge}>
+                      <Ionicons name="checkmark-circle-outline" size={13} color={KyotoMD3.primary} />
+                      <Text style={styles.secureBadgeText}>Authentic Perk</Text>
+                    </View>
 
-                  <View style={styles.actionRow}>
                     {isApplied ? (
                       <TouchableOpacity
                         style={styles.appliedButton}
@@ -150,9 +211,8 @@ export default function OffersScreen() {
                           removeOffer();
                         }}
                       >
-                        <Ionicons name="checkmark-circle" size={16} color={Colors.uberGreenDark} />
-                        <Text style={styles.appliedButtonText}>Applied to Basket</Text>
-                        <Text style={styles.removeTagText}>(Tap to Remove)</Text>
+                        <Ionicons name="checkmark" size={14} color={KyotoMD3.primary} />
+                        <Text style={styles.appliedButtonText}>Applied (Remove)</Text>
                       </TouchableOpacity>
                     ) : (
                       <TouchableOpacity
@@ -160,7 +220,7 @@ export default function OffersScreen() {
                         onPress={() => handleApplyCoupon(offer)}
                       >
                         <Text style={styles.applyButtonText}>Apply Code</Text>
-                        <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                        <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -171,7 +231,7 @@ export default function OffersScreen() {
         )}
       </ScrollView>
 
-      {/* Floating Cart Bar */}
+      {/* Floating Bottom Cart Bar */}
       <FloatingCartBar
         totalItems={getTotalItems()}
         totalPaise={getTotalPaise()}
@@ -185,153 +245,241 @@ export default function OffersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: KyotoMD3.surface,
+  },
+  topAppBar: {
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    backgroundColor: KyotoMD3.surface,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    borderBottomWidth: 1,
+    borderBottomColor: KyotoMD3.outlineSubtle,
+  },
+  headerTitleCol: {
+    flexDirection: 'column',
+  },
+  tableChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: KyotoMD3.primaryContainer,
+    paddingVertical: 3,
+    paddingHorizontal: 9,
+    borderRadius: Radius.full,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  tableDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: KyotoMD3.primary,
+  },
+  tableChipText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: KyotoMD3.primary,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  brandTitleText: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.6,
+    color: KyotoMD3.onSurface,
+  },
+  iconButtonMD3: {
+    width: 38,
+    height: 38,
+    borderRadius: Radius.full,
+    backgroundColor: KyotoMD3.surfaceContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      android: { elevation: 1 },
+    }),
   },
   scrollContent: {
-    padding: Spacing.base,
-    paddingBottom: 130,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    gap: 16,
   },
-  header: {
-    marginBottom: Spacing.base,
+  subtitleIntro: {
+    fontSize: 12,
+    color: KyotoMD3.onSurfaceVariant,
+    lineHeight: 18,
+    marginBottom: 2,
+  },
+  loadingContainer: {
+    paddingVertical: 60,
+    alignItems: 'center',
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+    paddingVertical: 40,
   },
-  ticketContainer: {
-    position: 'relative',
-    marginBottom: Spacing.base,
-    borderRadius: Radius.lg,
-    backgroundColor: Colors.surface,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
+  emptyHeading: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: KyotoMD3.onSurface,
+    marginTop: 12,
+  },
+  emptySub: {
+    fontSize: 12,
+    color: KyotoMD3.onSurfaceVariant,
+    marginTop: 4,
+  },
+  ticketCard: {
+    backgroundColor: KyotoMD3.surfaceBright,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: KyotoMD3.outlineSubtle,
     overflow: 'hidden',
-    ...Elevation.sm,
+    position: 'relative',
+    ...Platform.select({
+      android: { elevation: 2 },
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+      },
+    }),
   },
-  notchLeft: {
+  ticketMediaWrap: {
+    width: '100%',
+    height: 120,
+    position: 'relative',
+    backgroundColor: KyotoMD3.surfaceContainer,
+  },
+  ticketMedia: {
+    width: '100%',
+    height: '100%',
+  },
+  discountTagBadge: {
     position: 'absolute',
-    left: -12,
-    top: '48%',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: Colors.background,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    zIndex: 10,
-  },
-  notchRight: {
-    position: 'absolute',
-    right: -12,
-    top: '48%',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: Colors.background,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    zIndex: 10,
-  },
-  ticketInner: {
-    padding: Spacing.base,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.sm,
-  },
-  couponTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.uberGreenContainer,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 5,
-    borderRadius: Radius.xs,
-    borderStyle: 'dashed',
-    borderWidth: 1.5,
-    borderColor: Colors.uberGreen,
-  },
-  couponCode: {
-    fontWeight: '900',
-    color: Colors.uberGreenDark,
-    letterSpacing: 1.2,
-    fontSize: 13,
-  },
-  discountBadge: {
-    backgroundColor: '#000000',
-    paddingHorizontal: 10,
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(29, 27, 22, 0.88)',
     paddingVertical: 4,
+    paddingHorizontal: 10,
     borderRadius: Radius.full,
   },
-  discountHighlight: {
+  discountTagText: {
+    fontSize: 11,
+    fontWeight: '800',
     color: '#FFFFFF',
-    fontWeight: '900',
-    fontSize: 12,
     letterSpacing: 0.5,
   },
-  offerTitle: {
-    color: Colors.textPrimary,
-    marginTop: 4,
-    fontWeight: '800',
-  },
-  offerDesc: {
-    color: Colors.textSecondary,
-    marginTop: 4,
-    fontSize: 13,
-  },
-  dashedPerforation: {
-    borderStyle: 'dashed',
+  perforationCircle: {
+    position: 'absolute',
+    top: 112,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: KyotoMD3.surface,
     borderWidth: 1,
-    borderColor: '#E2E2E2',
-    marginVertical: 12,
+    borderColor: KyotoMD3.outlineSubtle,
+    zIndex: 10,
   },
-  termsRow: {
+  circleLeft: {
+    left: -8,
+  },
+  circleRight: {
+    right: -8,
+  },
+  ticketBody: {
+    padding: 16,
+  },
+  ticketHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  codeCapsule: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    backgroundColor: KyotoMD3.primaryContainer,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: Radius.sm,
   },
-  termsText: {
-    color: Colors.textMuted,
-    fontSize: 12,
+  codeCapsuleText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: KyotoMD3.primary,
+    letterSpacing: 0.8,
   },
-  actionRow: {
-    marginTop: Spacing.md,
+  microTerms: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: KyotoMD3.secondary,
+  },
+  offerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: KyotoMD3.onSurface,
+    marginBottom: 4,
+    letterSpacing: -0.3,
+  },
+  offerDesc: {
+    fontSize: 11,
+    color: KyotoMD3.onSurfaceVariant,
+    lineHeight: 16,
+    marginBottom: 12,
+  },
+  dashedLine: {
+    height: 1,
+    borderWidth: 1,
+    borderColor: KyotoMD3.outlineSubtle,
+    borderStyle: 'dashed',
+    marginBottom: 12,
+  },
+  ticketFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  secureBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  secureBadgeText: {
+    fontSize: 11,
+    color: KyotoMD3.onSurfaceVariant,
+    fontWeight: '600',
   },
   applyButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.uberGreen,
-    paddingVertical: 12,
-    borderRadius: Radius.md,
-    gap: 8,
+    gap: 4,
+    backgroundColor: KyotoMD3.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: Radius.full,
   },
   applyButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '800',
+    color: '#FFFFFF',
   },
   appliedButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.uberGreenContainer,
-    paddingVertical: 12,
-    borderRadius: Radius.md,
-    borderWidth: 1.5,
-    borderColor: Colors.uberGreen,
-    gap: 6,
+    gap: 4,
+    backgroundColor: KyotoMD3.primaryContainer,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: Radius.full,
   },
   appliedButtonText: {
-    color: Colors.uberGreenDark,
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '800',
-  },
-  removeTagText: {
-    color: Colors.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
+    color: KyotoMD3.primary,
   },
 });

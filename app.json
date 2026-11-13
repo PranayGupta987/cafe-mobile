@@ -5,9 +5,11 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "cafeapp",
+    "scheme": [
+      "cafeapp",
+      "com.googleusercontent.apps.435112311982-k7jbtohlcicukm0vcvpv80c56gk65e83"
+    ],
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.cafeapp.mobile",
       "supportsTablet": true,
@@ -50,7 +52,9 @@
         {
           "cameraPermission": "Allow Café App to scan table QR codes for ordering and session check-in."
         }
-      ]
+      ],
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -66,6 +70,12 @@
         "projectId": "7c70834f-69e9-4b5f-8bd8-a1ce5773baed"
       }
     },
-    "owner": "pranaygupta1"
+    "owner": "pranaygupta1",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7c70834f-69e9-4b5f-8bd8-a1ce5773baed"
+    }
   }
 }
